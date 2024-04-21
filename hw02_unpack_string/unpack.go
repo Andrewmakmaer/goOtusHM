@@ -6,8 +6,8 @@ import (
 
 var ErrInvalidString = errors.New("invalid string")
 
-func modifyString(sourceSlice []byte, index, multiplier int) []byte {
-	var multiItemSlice []byte
+func modifyString(sourceSlice []rune, index, multiplier int) []rune {
+	var multiItemSlice []rune
 	for item := multiplier; item > 0; item-- {
 		multiItemSlice = append(multiItemSlice, sourceSlice[index])
 	}
@@ -18,7 +18,7 @@ func modifyString(sourceSlice []byte, index, multiplier int) []byte {
 	return resultSlice
 }
 
-func isNumber(symbolByte byte) bool {
+func isNumber(symbolByte rune) bool {
 	if int(symbolByte) >= 48 && int(symbolByte) <= 57 {
 		return true
 	}
@@ -27,30 +27,30 @@ func isNumber(symbolByte byte) bool {
 }
 
 func Unpack(str string) (string, error) {
-	strBytes := []byte(str)
-	for i := 0; i < len(strBytes); i++ {
-		if int(strBytes[i]) == 92 {
-			if i < len(strBytes)-2 && (isNumber(strBytes[i+1]) || int(strBytes[i+1]) == 92) {
-				strBytes = append(strBytes[:i], strBytes[i+1:]...)
+	strRunes := []rune(str)
+	for i := 0; i < len(strRunes); i++ {
+		if int(strRunes[i]) == 92 {
+			if i < len(strRunes)-2 && (isNumber(strRunes[i+1]) || int(strRunes[i+1]) == 92) {
+				strRunes = append(strRunes[:i], strRunes[i+1:]...)
 				continue
-			} else if i == len(strBytes)-2 {
-				strBytes = append(strBytes[:i], strBytes[i+1:]...)
+			} else if i == len(strRunes)-2 {
+				strRunes = append(strRunes[:i], strRunes[i+1:]...)
 				break
 			}
 
 			return "", ErrInvalidString
 		}
-		if isNumber(strBytes[i]) {
-			if i == 0 || (i < len(strBytes)-1 && isNumber(strBytes[i+1])) {
+		if isNumber(strRunes[i]) {
+			if i == 0 || (i < len(strRunes)-1 && isNumber(strRunes[i+1])) {
 				return "", ErrInvalidString
 			}
-			multiper := int(strBytes[i]) - 48
-			strBytes = modifyString(strBytes, i-1, multiper)
+			multiper := int(strRunes[i]) - 48
+			strRunes = modifyString(strRunes, i-1, multiper)
 			i = i + multiper - 2
 			continue
 		}
 
 		continue
 	}
-	return string(strBytes), nil
+	return string(strRunes), nil
 }
