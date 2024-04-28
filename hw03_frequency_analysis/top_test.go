@@ -79,4 +79,9 @@ func TestTop10(t *testing.T) {
 			require.Equal(t, expected, Top10(text))
 		}
 	})
+
+	t.Run("chars edges of the line", func(t *testing.T) {
+		expected := []string{"world", "all", "best", "earth", "hello", "in", "is", "place"}
+		require.Equal(t, Top10("Hello world! Earth is best place in all World!!!"), expected)
+	})
 }
