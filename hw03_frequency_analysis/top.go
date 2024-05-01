@@ -1,25 +1,29 @@
 package hw03frequencyanalysis
 
 import (
+	"regexp"
 	"sort"
 	"strings"
 	"unicode"
 )
 
+var lettersInWord = regexp.MustCompile(`[a-zA-Zа-яА-Я]`)
+
 func Top10(st string) []string {
 	wordCouter := make(map[string]int)
 	formatedString := strings.ReplaceAll(st, "\n", " ")
 	stSlice := strings.Split(formatedString, " ")
-	for _, item := range stSlice {
-		itemWord := strings.TrimSpace(item)
-		itemWord = strings.ToLower(itemWord)
-		itemWord = strings.TrimFunc(itemWord, func(r rune) bool {
-			return !unicode.IsLetter(r) && !unicode.IsNumber(r)
-		})
 
-		if itemWord == "" {
+	for _, item := range stSlice {
+		itemWord := strings.ToLower(item)
+		if lettersInWord.MatchString(itemWord) {
+			itemWord = strings.TrimFunc(itemWord, func(r rune) bool {
+				return !unicode.IsLetter(r) && !unicode.IsNumber(r)
+			})
+		} else if len(itemWord) <= 1 {
 			continue
 		}
+
 		value, ok := wordCouter[itemWord]
 		if ok {
 			wordCouter[itemWord] = value + 1

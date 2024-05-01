@@ -82,6 +82,15 @@ func TestTop10(t *testing.T) {
 
 	t.Run("chars edges of the line", func(t *testing.T) {
 		expected := []string{"world", "all", "best", "earth", "hello", "in", "is", "place"}
-		require.Equal(t, Top10("Hello world! Earth is best place in all World!!!"), expected)
+		require.Equal(t, expected, Top10("Hello world! Earth is best place in all World!!!"))
+	})
+
+	t.Run("test for ----", func(t *testing.T) {
+		expected := []string{"is", "word", "----", "but", "not"}
+		require.Equal(t, expected, Top10("word is ---- but - is not word"))
+	})
+
+	t.Run("no words in empty string", func(t *testing.T) {
+		require.Len(t, Top10(":-)"), 1)
 	})
 }
