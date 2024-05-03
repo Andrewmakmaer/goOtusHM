@@ -47,7 +47,7 @@ func (l *list) PushFront(v interface{}) *ListItem {
 		l.firstNode.Prev = newListItem
 		l.firstNode = newListItem
 	}
-	l.lenghtList = l.lenghtList + 1
+	l.lenghtList++
 	return newListItem
 }
 
@@ -62,7 +62,7 @@ func (l *list) PushBack(v interface{}) *ListItem {
 		l.lastNode.Next = newListItem
 		l.lastNode = newListItem
 	}
-	l.lenghtList = l.lenghtList + 1
+	l.lenghtList++
 	return newListItem
 }
 
@@ -82,7 +82,7 @@ func (l *list) Remove(item *ListItem) {
 		l.lastNode = left
 	}
 
-	l.lenghtList = l.lenghtList - 1
+	l.lenghtList--
 }
 
 func (l *list) MoveToFront(item *ListItem) {
