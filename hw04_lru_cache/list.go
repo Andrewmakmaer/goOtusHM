@@ -17,8 +17,6 @@ type ListItem struct {
 }
 
 type list struct {
-	// List Remove me after realization.
-	// Place your code here.
 	firstNode  *ListItem
 	lastNode   *ListItem
 	lenghtList int
