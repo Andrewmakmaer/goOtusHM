@@ -71,8 +71,8 @@ func (c *lruCache) Get(key Key) (interface{}, bool) {
 
 func (c *lruCache) Clear() {
 	clearList := NewList()
-	clearItems := make(map[Key]*ListItem, c.capacity+1)
-	clearValToKeyItems := make(map[*ListItem]Key, c.capacity+1)
+	clearItems := make(map[Key]*ListItem, c.capacity)
+	clearValToKeyItems := make(map[*ListItem]Key, c.capacity)
 	c.itemsLock.Lock()
 	c.queue, c.items, c.valToKeyItems = clearList, clearItems, clearValToKeyItems
 	c.itemsLock.Unlock()
