@@ -22,8 +22,8 @@ func NewCache(capacity int) Cache {
 	return &lruCache{
 		capacity:      capacity,
 		queue:         NewList(),
-		items:         make(map[Key]*ListItem, capacity+1),
-		valToKeyItems: make(map[*ListItem]Key, capacity+1),
+		items:         make(map[Key]*ListItem, capacity),
+		valToKeyItems: make(map[*ListItem]Key, capacity),
 	}
 }
 
@@ -36,12 +36,7 @@ func (c *lruCache) Set(key Key, newValue interface{}) bool {
 		c.queue.MoveToFront(itemList)
 		return true
 	}
-	c.queue.PushFront(newValue)
-	c.itemsLock.Lock()
-	c.items[key] = c.queue.Front()
-	c.valToKeyItems[c.queue.Front()] = key
-	c.itemsLock.Unlock()
-	if c.queue.Len() > c.capacity {
+	if c.queue.Len() == c.capacity {
 		lastItem := c.queue.Back()
 		c.itemsLock.RLock()
 		lastItemKey, ok := c.valToKeyItems[lastItem]
@@ -54,6 +49,11 @@ func (c *lruCache) Set(key Key, newValue interface{}) bool {
 			c.itemsLock.Unlock()
 		}
 	}
+	c.queue.PushFront(newValue)
+	c.itemsLock.Lock()
+	c.items[key] = c.queue.Front()
+	c.valToKeyItems[c.queue.Front()] = key
+	c.itemsLock.Unlock()
 	return false
 }
 
