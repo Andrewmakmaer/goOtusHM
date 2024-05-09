@@ -26,7 +26,6 @@ func NewCache(capacity int) Cache {
 }
 
 func (c *lruCache) Set(key Key, newValue interface{}) bool {
-
 	c.itemsLock.Lock()
 	itemList, ok := c.items[key]
 
