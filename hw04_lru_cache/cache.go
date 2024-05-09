@@ -11,59 +11,54 @@ type Cache interface {
 }
 
 type lruCache struct {
-	capacity      int
-	queue         List
-	items         map[Key]*ListItem
-	valToKeyItems map[*ListItem]Key
-	itemsLock     sync.RWMutex
+	capacity  int
+	queue     List
+	items     map[Key]*ListItem
+	itemsLock sync.Mutex
 }
 
 func NewCache(capacity int) Cache {
 	return &lruCache{
-		capacity:      capacity,
-		queue:         NewList(),
-		items:         make(map[Key]*ListItem, capacity),
-		valToKeyItems: make(map[*ListItem]Key, capacity),
+		capacity: capacity,
+		queue:    NewList(),
+		items:    make(map[Key]*ListItem, capacity),
 	}
 }
 
 func (c *lruCache) Set(key Key, newValue interface{}) bool {
-	c.itemsLock.RLock()
+
+	c.itemsLock.Lock()
 	itemList, ok := c.items[key]
-	c.itemsLock.RUnlock()
+
 	if ok {
 		itemList.Value = newValue
 		c.queue.MoveToFront(itemList)
+		c.itemsLock.Unlock()
 		return true
 	}
+
 	if c.queue.Len() == c.capacity {
 		lastItem := c.queue.Back()
-		c.itemsLock.RLock()
-		lastItemKey, ok := c.valToKeyItems[lastItem]
-		c.itemsLock.RUnlock()
-		if ok {
-			c.itemsLock.Lock()
-			delete(c.items, lastItemKey)
-			c.queue.Remove(lastItem)
-			delete(c.valToKeyItems, lastItem)
-			c.itemsLock.Unlock()
-		}
+		delete(c.items, lastItem.Key)
+		c.queue.Remove(lastItem)
 	}
+
 	c.queue.PushFront(newValue)
-	c.itemsLock.Lock()
+	c.queue.Front().Key = key
 	c.items[key] = c.queue.Front()
-	c.valToKeyItems[c.queue.Front()] = key
 	c.itemsLock.Unlock()
 	return false
 }
 
 func (c *lruCache) Get(key Key) (interface{}, bool) {
-	c.itemsLock.RLock()
+	c.itemsLock.Lock()
 	itemList, ok := c.items[key]
-	c.itemsLock.RUnlock()
+	c.itemsLock.Unlock()
 	if ok {
+		c.itemsLock.Lock()
 		result := itemList.Value
 		c.queue.MoveToFront(itemList)
+		c.itemsLock.Unlock()
 		return result, true
 	}
 	return nil, false
@@ -72,8 +67,7 @@ func (c *lruCache) Get(key Key) (interface{}, bool) {
 func (c *lruCache) Clear() {
 	clearList := NewList()
 	clearItems := make(map[Key]*ListItem, c.capacity)
-	clearValToKeyItems := make(map[*ListItem]Key, c.capacity)
 	c.itemsLock.Lock()
-	c.queue, c.items, c.valToKeyItems = clearList, clearItems, clearValToKeyItems
+	c.queue, c.items = clearList, clearItems
 	c.itemsLock.Unlock()
 }
