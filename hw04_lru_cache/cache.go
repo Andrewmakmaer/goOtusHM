@@ -52,14 +52,13 @@ func (c *lruCache) Set(key Key, newValue interface{}) bool {
 func (c *lruCache) Get(key Key) (interface{}, bool) {
 	c.itemsLock.Lock()
 	itemList, ok := c.items[key]
-	c.itemsLock.Unlock()
 	if ok {
-		c.itemsLock.Lock()
 		result := itemList.Value
 		c.queue.MoveToFront(itemList)
 		c.itemsLock.Unlock()
 		return result, true
 	}
+	c.itemsLock.Unlock()
 	return nil, false
 }
 
