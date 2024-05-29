@@ -122,6 +122,7 @@ func TestPipeline(t *testing.T) {
 		require.Less(t, int64(elapsed), int64(abortDur)+int64(fault))
 	})
 }
+
 func TestAllStop(t *testing.T) {
 	wg := sync.WaitGroup{}
 	// Stage generator
@@ -178,6 +179,5 @@ func TestAllStop(t *testing.T) {
 		wg.Wait()
 
 		require.Len(t, result, 0)
-
 	})
 }
