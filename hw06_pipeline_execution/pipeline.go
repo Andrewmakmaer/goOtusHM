@@ -12,7 +12,6 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 	outChannel := in
 	taskBinding := func(in In, done In) Out {
 		out := make(Bi)
-
 		go func() {
 			defer close(out)
 			for {
@@ -30,9 +29,7 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 		return out
 	}
 
-	var count int
 	for i := range stages {
-		count++
 		outChannel = taskBinding(stages[i](outChannel), done)
 	}
 	return outChannel
