@@ -12,15 +12,16 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 	taskBinding := func(in, done In) Out {
 		out := make(Bi)
 		go func() {
-			defer close(out)
 			for {
 				select {
 				case <-done:
+					close(out)
 					for range in {
 					}
 					return
 				case i, ok := <-in:
 					if !ok {
+						close(out)
 						return
 					}
 					out <- i
