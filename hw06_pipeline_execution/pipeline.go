@@ -9,14 +9,15 @@ type (
 type Stage func(in In) (out Out)
 
 func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	outChannel := in
-	taskBinding := func(in In, done In) Out {
+	taskBinding := func(in, done In) Out {
 		out := make(Bi)
 		go func() {
 			defer close(out)
 			for {
 				select {
 				case <-done:
+					for range in {
+					}
 					return
 				case i, ok := <-in:
 					if !ok {
@@ -29,6 +30,7 @@ func ExecutePipeline(in In, done In, stages ...Stage) Out {
 		return out
 	}
 
+	outChannel := taskBinding(in, done)
 	for i := range stages {
 		outChannel = taskBinding(stages[i](outChannel), done)
 	}

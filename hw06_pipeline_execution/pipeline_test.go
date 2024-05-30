@@ -135,11 +135,7 @@ func TestAllStop(t *testing.T) {
 				defer close(out)
 				for v := range in {
 					time.Sleep(sleepPerStage)
-					select {
-					case out <- f(v):
-					default:
-						continue
-					}
+					out <- f(v)
 				}
 			}()
 			return out
