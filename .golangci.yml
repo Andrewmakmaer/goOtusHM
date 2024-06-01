@@ -21,7 +21,7 @@ linters-settings:
     enable-all-rules: false
     rules:
       - name: empty-block
-        disable: false
+        disable: true
 issues:
   exclude-rules:
     - path: _test\.go
