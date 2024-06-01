@@ -26,7 +26,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	N := fileStat.Size() - offset
 	if N < 0 {
 		return ErrOffsetExceedsFileSize
-	} else if limit > 0 {
+	} else if limit > 0 && limit < N {
 		N = limit
 	}
 
@@ -45,10 +45,15 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
 
-	io.Copy(dstFile, barReader)
-	bar.Finish()
+	_, err = io.Copy(dstFile, barReader)
+	if err != nil {
+		dstFile.Close()
+		os.Remove(toPath)
+		return err
+	}
+	defer bar.Finish()
 
+	dstFile.Close()
 	return nil
 }
