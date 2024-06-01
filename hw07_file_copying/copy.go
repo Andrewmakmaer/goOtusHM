@@ -2,6 +2,10 @@ package main
 
 import (
 	"errors"
+	"io"
+	"os"
+
+	"github.com/cheggaaa/pb/v3"
 )
 
 var (
@@ -10,6 +14,46 @@ var (
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) error {
-	// Place your code here.
+	if fromPath == "/dev/urandom" || fromPath == "/dev/random" {
+		return ErrUnsupportedFile
+	}
+
+	fileStat, err := os.Stat(fromPath)
+	if err != nil {
+		return err
+	}
+
+	N := fileStat.Size() - offset
+	if N < 0 {
+		return ErrOffsetExceedsFileSize
+	} else if limit > 0 && limit < N {
+		N = limit
+	}
+
+	file, err := os.OpenFile(fromPath, os.O_RDONLY, 0)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	file.Seek(offset, io.SeekStart)
+
+	fileReader := io.LimitReader(file, N)
+	bar := pb.Full.Start64(N)
+	barReader := bar.NewProxyReader(fileReader)
+
+	dstFile, err := os.Create(toPath)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(dstFile, barReader)
+	if err != nil {
+		dstFile.Close()
+		os.Remove(toPath)
+		return err
+	}
+	defer bar.Finish()
+
+	dstFile.Close()
 	return nil
 }
