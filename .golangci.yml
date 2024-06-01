@@ -17,7 +17,11 @@ linters-settings:
           - "!$test"
         allow:
           - $gostd
-
+  revive:
+    enable-all-rules: false
+    rules:
+      - name: empty-block
+        disable: false
 issues:
   exclude-rules:
     - path: _test\.go
@@ -64,7 +68,7 @@ linters:
     - nolintlint
     - prealloc
     - predeclared
-    - revive
+    # - revive
     - staticcheck
     - stylecheck
     - tagliatelle
