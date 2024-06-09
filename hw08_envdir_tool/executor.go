@@ -7,7 +7,7 @@ import (
 )
 
 func RunCmd(cmd []string, env Environment) (returnCode int) {
-	command := exec.Command(cmd[0], cmd[1:]...)
+	command := exec.Command(cmd[0], cmd[1:]...) //nolint:gosec
 	for envName, item := range env {
 		if item.NeedRemove {
 			os.Unsetenv(envName)
@@ -18,7 +18,6 @@ func RunCmd(cmd []string, env Environment) (returnCode int) {
 	}
 
 	stdout, err := command.Output()
-
 	if err != nil {
 		fmt.Println(err.Error())
 		return 1

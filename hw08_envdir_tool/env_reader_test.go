@@ -27,7 +27,7 @@ func TestReadDir(t *testing.T) {
 
 	for _, file := range envFiles {
 		filePath := filepath.Join(tempDir, file.name)
-		err = os.WriteFile(filePath, []byte(file.value), 0644)
+		err = os.WriteFile(filePath, []byte(file.value), 0o644)
 		if err != nil {
 			t.Fatalf("Failed during create file %s: %v", file.name, err)
 		}
@@ -38,7 +38,11 @@ func TestReadDir(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 
-	expected := Environment{"FOO": EnvValue{Value: "value1", NeedRemove: false}, "EMPTY": EnvValue{Value: "", NeedRemove: false}, "FOOBAR": EnvValue{Value: "value\nfoobar", NeedRemove: true}}
+	expected := Environment{
+		"FOO":    EnvValue{Value: "value1", NeedRemove: false},
+		"EMPTY":  EnvValue{Value: "", NeedRemove: false},
+		"FOOBAR": EnvValue{Value: "value\nfoobar", NeedRemove: true},
+	}
 	require.Equal(t, expected, result)
 	os.RemoveAll(tempDir)
 }
