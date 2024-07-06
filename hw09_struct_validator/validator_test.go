@@ -3,6 +3,7 @@ package hw09structvalidator
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -40,10 +41,12 @@ type (
 
 func TestValidate(t *testing.T) {
 	tests := []struct {
-		in interface{}
+		in          interface{}
+		expectedErr error
 	}{
 		{
-			in: "It is not struct",
+			in:          "It is not struct",
+			expectedErr: NoStructTypeError{"type error: given object of type 'string', expected struct"},
 		},
 		{
 			in: User{
@@ -54,6 +57,7 @@ func TestValidate(t *testing.T) {
 				Role:   "admin",
 				Phones: []string{"12345678901", "90987654321"},
 			},
+			expectedErr: nil,
 		},
 		{
 			in: User{
@@ -63,32 +67,33 @@ func TestValidate(t *testing.T) {
 				Role:   "user",
 				Phones: []string{"1234", "535"},
 			},
+			expectedErr: ValidationErrors{
+				{Field: "ID", Err: fmt.Errorf("length of the 123456789012345678901234567890123456 is not equal 5")},
+				{Field: "Age", Err: fmt.Errorf("number 17 less that 18")},
+				{Field: "Email", Err: fmt.Errorf("invalid-email is not match for ^\\w+@\\w+\\.\\w+$ expression")},
+				{Field: "Role", Err: fmt.Errorf("value user not in admin,stuff")},
+				{Field: "Phones", Err: fmt.Errorf("length of the 1234 is not equal 11")},
+				{Field: "Phones", Err: fmt.Errorf("length of the 535 is not equal 11")},
+			},
 		},
 		{
 			in: Response{
 				Code: 200,
 				Body: "Hello",
 			},
+			expectedErr: ValidationErrors{
+				{Field: "Code", Err: fmt.Errorf("program fail: len validator is not supported for type int")},
+			},
 		},
 	}
 
-	t.Run("Sent not structure", func(t *testing.T) {
-		err := Validate(tests[0].in)
-		require.Truef(t, errors.As(err, &NoStructTypeError{}), "expected error: %q, but actual error %q", err, NoStructTypeError{})
-	})
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+			// t.Parallel()
 
-	t.Run("Run correct struct", func(t *testing.T) {
-		err := Validate(tests[1].in)
-		require.Truef(t, errors.Is(err, nil), "expected error: %q, but actual error %q", err, nil)
-	})
-
-	t.Run("Run wrong struct", func(t *testing.T) {
-		err := Validate(tests[2].in)
-		require.Truef(t, errors.As(err, &ValidationErrors{}), "expected error: %q, but actual error %q", err, nil)
-	})
-
-	t.Run("Run wrong struct", func(t *testing.T) {
-		err := Validate(tests[3].in)
-		require.Truef(t, errors.As(err, &ValidationErrors{}), "expected error: %q, but actual error %q", err, nil)
-	})
+			err := Validate(tt.in)
+			require.Truef(t, errors.Is(tt.expectedErr, err), "expected error: %q, but actual error %q", err, tt.expectedErr)
+			fmt.Println(err)
+		})
+	}
 }

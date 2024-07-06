@@ -121,7 +121,6 @@ func validateChecks(field *reflect.StructField, fieldValue reflect.Value, rules 
 				validErrors = append(validErrors, ValidationError{Field: field.Name, Err: fmt.Errorf("program fail: %s validator is not supported for type int", commands[0])})
 			}
 		}
-
 	}
 	return validErrors
 }
