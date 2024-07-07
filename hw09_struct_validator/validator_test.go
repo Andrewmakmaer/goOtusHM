@@ -69,7 +69,7 @@ func TestValidate(t *testing.T) {
 				Phones: []string{"1234", "53587654321"},
 			},
 			expectedErr: ValidationErrors{
-				{Field: "ID", Err: fmt.Errorf("%w, length of the 123456789012345678901234567890123456 is not equal 5", ErrValidate)},
+				{Field: "ID", Err: fmt.Errorf("%w, length of the 1234567 is not equal 5", ErrValidate)},
 				{Field: "Age", Err: fmt.Errorf("%w, number 17 less that 18", ErrValidate)},
 				{Field: "Email", Err: fmt.Errorf("%w, invalid-email is not match for ^\\w+@\\w+\\.\\w+$ expression", ErrValidate)},
 				{Field: "Role", Err: fmt.Errorf("%w, value user not in admin,stuff", ErrValidate)},
