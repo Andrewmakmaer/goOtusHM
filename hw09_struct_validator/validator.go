@@ -40,7 +40,7 @@ var (
 func (v ValidationErrors) Error() string {
 	var errorOut string
 	for _, e := range v {
-		errorOut += fmt.Sprintf("field - '%v' %s\n", e.Field, e.Err)
+		errorOut += fmt.Sprintf("err in field - '%v': %s\n", e.Field, e.Err)
 	}
 	return errorOut
 }
@@ -48,7 +48,7 @@ func (v ValidationErrors) Error() string {
 func (v ValidatorSetError) Error() string {
 	var errorOut string
 	for _, e := range v {
-		errorOut += fmt.Sprintf("field - '%v' %s\n", e.Field, e.Err)
+		errorOut += fmt.Sprintf("err in field - '%v': %s\n", e.Field, e.Err)
 	}
 	return errorOut
 }
@@ -81,7 +81,7 @@ func validateString(commands []string, str string) error {
 		if valueIn(str, commands[1]) {
 			return nil
 		}
-		return fmt.Errorf("%w: value %v not in %v", ErrValidate, str, commands[1])
+		return fmt.Errorf("%w, value %v not in %v", ErrValidate, str, commands[1])
 	case "len":
 		requireLen, err := strconv.Atoi(commands[1])
 		if err != nil {
@@ -90,7 +90,7 @@ func validateString(commands []string, str string) error {
 		if len(str) == requireLen {
 			return nil
 		}
-		return fmt.Errorf("%w: value %v not in %v", ErrValidate, str, commands[1])
+		return fmt.Errorf("%w, length of the %v is not equal %v", ErrValidate, str, commands[1])
 	case "regexp":
 		exp, err := regexp.Compile(commands[1])
 		if err != nil {
@@ -99,9 +99,9 @@ func validateString(commands []string, str string) error {
 		if exp.Match([]byte(str)) {
 			return nil
 		}
-		return fmt.Errorf("%w: %s is not match for %v expression", ErrValidate, str, commands[1])
+		return fmt.Errorf("%w, %s is not match for %v expression", ErrValidate, str, commands[1])
 	}
-	return fmt.Errorf("%w: %s validator is not supported for type string", ErrTags, commands[0])
+	return fmt.Errorf("%w, %s validator is not supported for type string", ErrTags, commands[0])
 }
 
 func validateInt(commands []string, number int) error {
@@ -110,14 +110,14 @@ func validateInt(commands []string, number int) error {
 		if valueIn(number, commands[1]) {
 			return nil
 		}
-		return fmt.Errorf("%w: value %v not in %v", ErrValidate, number, commands[1])
+		return fmt.Errorf("%w, value %v not in %v", ErrValidate, number, commands[1])
 	case "max":
 		max, err := strconv.Atoi(commands[1])
 		if err != nil {
 			return err
 		}
 		if number > max {
-			return fmt.Errorf("%w: number %v over that %q", ErrValidate, number, commands[1])
+			return fmt.Errorf("%w, number %v over that %q", ErrValidate, number, commands[1])
 		}
 		return nil
 	case "min":
@@ -126,12 +126,11 @@ func validateInt(commands []string, number int) error {
 			return err
 		}
 		if number < min {
-			return fmt.Errorf("%w: number %v less that %v", ErrValidate, number, commands[1])
+			return fmt.Errorf("%w, number %v less that %v", ErrValidate, number, commands[1])
 		}
 		return nil
 	}
-	fmt.Printf("%s validator is not supported for type int", commands[0])
-	return fmt.Errorf("%w: %s validator is not supported for type int", ErrTags, commands[0])
+	return fmt.Errorf("%w, %s validator is not supported for type int", ErrTags, commands[0])
 }
 
 func validateChecks(field *reflect.StructField,
@@ -186,9 +185,10 @@ func Validate(v interface{}) error {
 		}
 		if fieldValue.Kind() == reflect.Slice {
 			for j := 0; j < valueFields.Field(i).Len(); j++ {
-				REL, VTE := validateChecks(&field, fieldValue, parseLabel(tag))
+				REL, VTE := validateChecks(&field, fieldValue.Index(j), parseLabel(tag))
 				ResultErrorsList = append(ResultErrorsList, REL...)
 				ValidationsErrTags = append(ValidationsErrTags, VTE...)
+				fmt.Println(len(ValidationsErrTags), len(ResultErrorsList))
 			}
 			continue
 		}

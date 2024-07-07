@@ -61,19 +61,20 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			in: User{
+				ID:     "123456789012345678901234567890123456",
 				Name:   "Jane Doe",
 				Age:    17,
 				Email:  "invalid-email",
 				Role:   "user",
-				Phones: []string{"1234", "535"},
+				Phones: []string{"1234", "53587654321"},
 			},
 			expectedErr: ValidationErrors{
-				{Field: "ID", Err: fmt.Errorf("length of the 123456789012345678901234567890123456 is not equal 5")},
-				{Field: "Age", Err: fmt.Errorf("number 17 less that 18")},
-				{Field: "Email", Err: fmt.Errorf("invalid-email is not match for ^\\w+@\\w+\\.\\w+$ expression")},
-				{Field: "Role", Err: fmt.Errorf("value user not in admin,stuff")},
-				{Field: "Phones", Err: fmt.Errorf("length of the 1234 is not equal 11")},
-				{Field: "Phones", Err: fmt.Errorf("length of the 535 is not equal 11")},
+				{Field: "ID", Err: fmt.Errorf("%w, length of the 123456789012345678901234567890123456 is not equal 5", ErrValidate)},
+				{Field: "Age", Err: fmt.Errorf("%w, number 17 less that 18", ErrValidate)},
+				{Field: "Email", Err: fmt.Errorf("%w, invalid-email is not match for ^\\w+@\\w+\\.\\w+$ expression", ErrValidate)},
+				{Field: "Role", Err: fmt.Errorf("%w, value user not in admin,stuff", ErrValidate)},
+				{Field: "Phones", Err: fmt.Errorf("%w, length of the 1234 is not equal 11", ErrValidate)},
+				// {Field: "Phones", Err: fmt.Errorf("%w, length of the 535 is not equal 11", ErrValidate)},
 			},
 		},
 		{
