@@ -81,7 +81,7 @@ func TestValidate(t *testing.T) {
 				Code: 200,
 				Body: "Hello",
 			},
-			expectedErr: ValidationErrors{
+			expectedErr: ValidatorSetError{
 				{Field: "Code", Err: fmt.Errorf("program fail: len validator is not supported for type int")},
 			},
 		},
@@ -90,10 +90,8 @@ func TestValidate(t *testing.T) {
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
 			// t.Parallel()
-
 			err := Validate(tt.in)
-			require.Truef(t, errors.Is(tt.expectedErr, err), "expected error: %q, but actual error %q", err, tt.expectedErr)
-			fmt.Println(err)
+			require.Truef(t, errors.Is(tt.expectedErr, err), "expected error: %q, but actual error %q", tt.expectedErr, err)
 		})
 	}
 }

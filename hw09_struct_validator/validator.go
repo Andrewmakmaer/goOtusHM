@@ -1,6 +1,7 @@
 package hw09structvalidator
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -8,32 +9,48 @@ import (
 	"strings"
 )
 
-var ResultErrorsList ValidationErrors
+type NoStructTypeError struct {
+	message string
+}
+
+func (n NoStructTypeError) Error() string {
+	return n.message
+}
 
 type ValidationError struct {
 	Field string
 	Err   error
 }
 
-type NoStructTypeError struct {
-	message string
+type ValidatorError struct {
+	Field string
+	Err   error
 }
 
 type (
-	ValidationErrors []ValidationError
-	NoStructType     error
+	ValidationErrors  []ValidationError
+	ValidatorSetError []ValidatorError
 )
 
-func (n NoStructTypeError) Error() string {
-	panic(n.message)
-}
+var (
+	ErrValidate = errors.New("validate error")
+	ErrTags     = errors.New("program fail")
+)
 
 func (v ValidationErrors) Error() string {
-	var panicOut string
+	var errorOut string
 	for _, e := range v {
-		panicOut = panicOut + fmt.Sprintf("error in '%v' field: %s\n", e.Field, e.Err)
+		errorOut += fmt.Sprintf("field - '%v' %s\n", e.Field, e.Err)
 	}
-	panic(panicOut)
+	return errorOut
+}
+
+func (v ValidatorSetError) Error() string {
+	var errorOut string
+	for _, e := range v {
+		errorOut += fmt.Sprintf("field - '%v' %s\n", e.Field, e.Err)
+	}
+	return errorOut
 }
 
 func valueIn(val any, set string) bool {
@@ -58,71 +75,90 @@ func valueIn(val any, set string) bool {
 	return false
 }
 
-func validateChecks(field *reflect.StructField, fieldValue reflect.Value, rules []string) ValidationErrors {
+func validateString(commands []string, str string) error {
+	switch commands[0] {
+	case "in":
+		if valueIn(str, commands[1]) {
+			return nil
+		}
+		return fmt.Errorf("%w: value %v not in %v", ErrValidate, str, commands[1])
+	case "len":
+		requireLen, err := strconv.Atoi(commands[1])
+		if err != nil {
+			return err
+		}
+		if len(str) == requireLen {
+			return nil
+		}
+		return fmt.Errorf("%w: value %v not in %v", ErrValidate, str, commands[1])
+	case "regexp":
+		exp, err := regexp.Compile(commands[1])
+		if err != nil {
+			return err
+		}
+		if exp.Match([]byte(str)) {
+			return nil
+		}
+		return fmt.Errorf("%w: %s is not match for %v expression", ErrValidate, str, commands[1])
+	}
+	return fmt.Errorf("%w: %s validator is not supported for type string", ErrTags, commands[0])
+}
+
+func validateInt(commands []string, number int) error {
+	switch commands[0] {
+	case "in":
+		if valueIn(number, commands[1]) {
+			return nil
+		}
+		return fmt.Errorf("%w: value %v not in %v", ErrValidate, number, commands[1])
+	case "max":
+		max, err := strconv.Atoi(commands[1])
+		if err != nil {
+			return err
+		}
+		if number > max {
+			return fmt.Errorf("%w: number %v over that %q", ErrValidate, number, commands[1])
+		}
+		return nil
+	case "min":
+		min, err := strconv.Atoi(commands[1])
+		if err != nil {
+			return err
+		}
+		if number < min {
+			return fmt.Errorf("%w: number %v less that %v", ErrValidate, number, commands[1])
+		}
+		return nil
+	}
+	fmt.Printf("%s validator is not supported for type int", commands[0])
+	return fmt.Errorf("%w: %s validator is not supported for type int", ErrTags, commands[0])
+}
+
+func validateChecks(field *reflect.StructField,
+	fieldValue reflect.Value,
+	rules []string,
+) (ValidationErrors, ValidatorSetError) {
 	var validErrors ValidationErrors
+	var validSetError ValidatorSetError
 
 	for _, item := range rules {
+		var err error
 		commands := strings.Split(item, ":")
-		if fieldValue.Kind().String() == "string" {
-			switch commands[0] {
-			case "in":
-				if valueIn(fieldValue.String(), commands[1]) {
-					continue
-				}
-				validErrors = append(validErrors, ValidationError{Field: field.Name, Err: fmt.Errorf("value %v not in %v", fieldValue.String(), commands[1])})
-			case "len":
-				requireLen, err := strconv.Atoi(commands[1])
-				if err != nil {
-					validErrors = append(validErrors, ValidationError{Field: field.Name, Err: err})
-					continue
-				}
-				if len(fieldValue.String()) == requireLen {
-					continue
-				}
-				validErrors = append(validErrors, ValidationError{Field: field.Name, Err: fmt.Errorf("length of the %s is not equal %v", fieldValue.String(), commands[1])})
-			case "regexp":
-				exp, err := regexp.Compile(commands[1])
-				if err != nil {
-					validErrors = append(validErrors, ValidationError{Field: field.Name, Err: err})
-				}
-				if exp.Match([]byte(fieldValue.String())) {
-					continue
-				}
-				validErrors = append(validErrors, ValidationError{Field: field.Name, Err: fmt.Errorf("%s is not match for %v expression", fieldValue.String(), commands[1])})
-			default:
-				validErrors = append(validErrors, ValidationError{Field: field.Name, Err: fmt.Errorf("program fail: %s validator is not supported for type string", commands[0])})
-			}
-		} else if fieldValue.Kind().String() == "int" {
-			switch commands[0] {
-			case "in":
-				if valueIn(int(fieldValue.Int()), commands[1]) {
-					continue
-				}
-				validErrors = append(validErrors, ValidationError{Field: field.Name, Err: fmt.Errorf("value %v not in %q", fieldValue.Int(), commands[1])})
-			case "min":
-				min, err := strconv.Atoi(commands[1])
-				if err != nil {
-					validErrors = append(validErrors, ValidationError{Field: field.Name, Err: err})
-					continue
-				}
-				if int(fieldValue.Int()) < min {
-					validErrors = append(validErrors, ValidationError{Field: field.Name, Err: fmt.Errorf("number %v less that %v", fieldValue.Int(), commands[1])})
-				}
-			case "max":
-				max, err := strconv.Atoi(commands[1])
-				if err != nil {
-					validErrors = append(validErrors, ValidationError{Field: field.Name, Err: err})
-					continue
-				}
-				if int(fieldValue.Int()) > max {
-					validErrors = append(validErrors, ValidationError{Field: field.Name, Err: fmt.Errorf("number %v over that %q", fieldValue.Int(), commands[1])})
-				}
-			default:
-				validErrors = append(validErrors, ValidationError{Field: field.Name, Err: fmt.Errorf("program fail: %s validator is not supported for type int", commands[0])})
+		switch fieldValue.Kind().String() {
+		case "string":
+			err = validateString(commands, fieldValue.String())
+		case "int":
+			err = validateInt(commands, int(fieldValue.Int()))
+		}
+		if err != nil {
+			if errors.Is(err, ErrTags) {
+				validSetError = append(validSetError, ValidatorError{Field: field.Name, Err: err})
+			} else if errors.Is(err, ErrValidate) {
+				validErrors = append(validErrors, ValidationError{Field: field.Name, Err: err})
 			}
 		}
 	}
-	return validErrors
+	return validErrors, validSetError
 }
 
 func parseLabel(labelString string) []string {
@@ -132,8 +168,12 @@ func parseLabel(labelString string) []string {
 
 func Validate(v interface{}) error {
 	if reflect.TypeOf(v).Kind().String() != "struct" {
-		return NoStructTypeError{message: fmt.Sprintf("type error: given object of type '%v', expected %v", reflect.TypeOf(v).Kind().String(), "struct")}
+		return NoStructTypeError{message: fmt.Sprintf("type error: given object of type '%v', expected %v",
+			reflect.TypeOf(v).Kind().String(), "struct")}
 	}
+
+	var ResultErrorsList ValidationErrors
+	var ValidationsErrTags ValidatorSetError
 
 	valueFields := reflect.ValueOf(v)
 
@@ -146,15 +186,21 @@ func Validate(v interface{}) error {
 		}
 		if fieldValue.Kind() == reflect.Slice {
 			for j := 0; j < valueFields.Field(i).Len(); j++ {
-				ResultErrorsList = append(ResultErrorsList, validateChecks(&field, fieldValue.Index(j), parseLabel(tag))...)
+				REL, VTE := validateChecks(&field, fieldValue, parseLabel(tag))
+				ResultErrorsList = append(ResultErrorsList, REL...)
+				ValidationsErrTags = append(ValidationsErrTags, VTE...)
 			}
 			continue
 		}
-		ResultErrorsList = append(ResultErrorsList, validateChecks(&field, fieldValue, parseLabel(tag))...)
+		REL, VTE := validateChecks(&field, fieldValue, parseLabel(tag))
+		ResultErrorsList = append(ResultErrorsList, REL...)
+		ValidationsErrTags = append(ValidationsErrTags, VTE...)
 	}
 
-	if len(ResultErrorsList) == 0 {
-		return nil
+	if len(ValidationsErrTags) != 0 {
+		return ValidationsErrTags
+	} else if len(ResultErrorsList) != 0 {
+		return ResultErrorsList
 	}
-	return ResultErrorsList
+	return nil
 }
