@@ -74,7 +74,6 @@ func TestValidate(t *testing.T) {
 				{Field: "Email", Err: fmt.Errorf("%w, invalid-email is not match for ^\\w+@\\w+\\.\\w+$ expression", ErrValidate)},
 				{Field: "Role", Err: fmt.Errorf("%w, value user not in admin,stuff", ErrValidate)},
 				{Field: "Phones", Err: fmt.Errorf("%w, length of the 1234 is not equal 11", ErrValidate)},
-				// {Field: "Phones", Err: fmt.Errorf("%w, length of the 535 is not equal 11", ErrValidate)},
 			},
 		},
 		{
@@ -83,7 +82,7 @@ func TestValidate(t *testing.T) {
 				Body: "Hello",
 			},
 			expectedErr: ValidatorSetError{
-				{Field: "Code", Err: fmt.Errorf("program fail: len validator is not supported for type int")},
+				{Field: "Code", Err: fmt.Errorf("%w, len validator is not supported for type int", ErrTags)},
 			},
 		},
 	}
