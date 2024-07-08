@@ -188,7 +188,6 @@ func Validate(v interface{}) error {
 				REL, VTE := validateChecks(&field, fieldValue.Index(j), parseLabel(tag))
 				ResultErrorsList = append(ResultErrorsList, REL...)
 				ValidationsErrTags = append(ValidationsErrTags, VTE...)
-				fmt.Println(len(ValidationsErrTags), len(ResultErrorsList))
 			}
 			continue
 		}

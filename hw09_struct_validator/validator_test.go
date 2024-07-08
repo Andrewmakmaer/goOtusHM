@@ -2,8 +2,8 @@ package hw09structvalidator
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -61,7 +61,7 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			in: User{
-				ID:     "123456789012345678901234567890123456",
+				ID:     "1234567",
 				Name:   "Jane Doe",
 				Age:    17,
 				Email:  "invalid-email",
@@ -89,9 +89,9 @@ func TestValidate(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
-			// t.Parallel()
+			t.Parallel()
 			err := Validate(tt.in)
-			require.Truef(t, errors.Is(tt.expectedErr, err), "expected error: %q, but actual error %q", tt.expectedErr, err)
+			require.Truef(t, reflect.DeepEqual(tt.expectedErr, err), "expected: %q, but actual error %q", tt.expectedErr, err)
 		})
 	}
 }
