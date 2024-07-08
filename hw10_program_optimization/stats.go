@@ -1,12 +1,16 @@
 package hw10programoptimization
 
 import (
-	"encoding/json"
+	"bufio"
 	"fmt"
 	"io"
-	"regexp"
 	"strings"
+	"sync"
+
+	jsoniter "github.com/json-iterator/go"
 )
+
+type DomainStat map[string]int
 
 type User struct {
 	ID       int
@@ -18,7 +22,15 @@ type User struct {
 	Address  string
 }
 
-type DomainStat map[string]int
+func (us *User) Reset() {
+	us.ID = 0
+	us.Name = ""
+	us.Username = ""
+	us.Email = ""
+	us.Phone = ""
+	us.Password = ""
+	us.Address = ""
+}
 
 func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 	u, err := getUsers(r)
@@ -30,19 +42,23 @@ func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 
 type users [100_000]User
 
-func getUsers(r io.Reader) (result users, err error) {
-	content, err := io.ReadAll(r)
-	if err != nil {
-		return
-	}
+var userPool = sync.Pool{
+	New: func() interface{} { return &User{} },
+}
 
-	lines := strings.Split(string(content), "\n")
-	for i, line := range lines {
-		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
+func getUsers(r io.Reader) (result users, err error) {
+	scanner := bufio.NewScanner(r)
+	counter := 0
+	for scanner.Scan() {
+		user := userPool.Get().(*User)
+		user.Reset()
+		if err = jsoniter.Unmarshal(scanner.Bytes(), user); err != nil {
+			userPool.Put(user)
 			return
 		}
-		result[i] = user
+		result[counter] = *user
+		userPool.Put(user)
+		counter += 1
 	}
 	return
 }
@@ -51,10 +67,7 @@ func countDomains(u users, domain string) (DomainStat, error) {
 	result := make(DomainStat)
 
 	for _, user := range u {
-		matched, err := regexp.Match("\\."+domain, []byte(user.Email))
-		if err != nil {
-			return nil, err
-		}
+		matched := strings.Contains(user.Email, "."+domain)
 
 		if matched {
 			num := result[strings.ToLower(strings.SplitN(user.Email, "@", 2)[1])]
