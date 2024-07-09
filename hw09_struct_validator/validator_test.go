@@ -3,7 +3,10 @@ package hw09structvalidator
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 type UserRole string
@@ -11,7 +14,7 @@ type UserRole string
 // Test the function on different structures and other types.
 type (
 	User struct {
-		ID     string `json:"id" validate:"len:36"`
+		ID     string `json:"id" validate:"len:5"`
 		Name   string
 		Age    int             `validate:"min:18|max:50"`
 		Email  string          `validate:"regexp:^\\w+@\\w+\\.\\w+$"`
@@ -31,7 +34,7 @@ type (
 	}
 
 	Response struct {
-		Code int    `validate:"in:200,404,500"`
+		Code int    `validate:"in:200,404,500|len:3"`
 		Body string `json:"omitempty"`
 	}
 )
@@ -42,19 +45,53 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			// Place your code here.
+			in:          "It is not struct",
+			expectedErr: NoStructTypeError{"type error: given object of type 'string', expected struct"},
 		},
-		// ...
-		// Place your code here.
+		{
+			in: User{
+				ID:     "12345",
+				Name:   "John Doe",
+				Age:    30,
+				Email:  "john@example.com",
+				Role:   "admin",
+				Phones: []string{"12345678901", "90987654321"},
+			},
+			expectedErr: nil,
+		},
+		{
+			in: User{
+				ID:     "1234567",
+				Name:   "Jane Doe",
+				Age:    17,
+				Email:  "invalid-email",
+				Role:   "user",
+				Phones: []string{"1234", "53587654321"},
+			},
+			expectedErr: ValidationErrors{
+				{Field: "ID", Err: fmt.Errorf("%w, length of the 1234567 is not equal 5", ErrValidate)},
+				{Field: "Age", Err: fmt.Errorf("%w, number 17 less that 18", ErrValidate)},
+				{Field: "Email", Err: fmt.Errorf("%w, invalid-email is not match for ^\\w+@\\w+\\.\\w+$ expression", ErrValidate)},
+				{Field: "Role", Err: fmt.Errorf("%w, value user not in admin,stuff", ErrValidate)},
+				{Field: "Phones", Err: fmt.Errorf("%w, length of the 1234 is not equal 11", ErrValidate)},
+			},
+		},
+		{
+			in: Response{
+				Code: 200,
+				Body: "Hello",
+			},
+			expectedErr: ValidatorSetError{
+				{Field: "Code", Err: fmt.Errorf("%w, len validator is not supported for type int", ErrTags)},
+			},
+		},
 	}
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
-			tt := tt
 			t.Parallel()
-
-			// Place your code here.
-			_ = tt
+			err := Validate(tt.in)
+			require.Truef(t, reflect.DeepEqual(tt.expectedErr, err), "expected: %q, but actual error %q", tt.expectedErr, err)
 		})
 	}
 }
