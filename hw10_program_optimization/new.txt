@@ -3,4 +3,4 @@ goarch: amd64
 pkg: github.com/Andrewmakmaer/goOtusHM/hw10_program_optimization
 cpu: 12th Gen Intel(R) Core(TM) i5-12400F
 BenchmarkRunStat
-BenchmarkRunStat-12         2467           4487548 ns/op           10843 B/op        587 allocs/op
+BenchmarkRunStat-12      1572744               707.5 ns/op          4161 B/op          2 allocs/op
