@@ -1,0 +1,6 @@
+goos: linux
+goarch: amd64
+pkg: github.com/fixme_my_friend/hw10_program_optimization
+cpu: 12th Gen Intel(R) Core(TM) i5-12400F
+BenchmarkRunStat
+BenchmarkRunStat-12         9598           1236274 ns/op           34578 B/op        324 allocs/op
