@@ -41,7 +41,6 @@ func (c *client) Send() error {
 			return fmt.Errorf("send error: %w", err)
 		}
 	}
-	fmt.Println("Exit programm")
 	if err := scanner.Err(); err != nil {
 		fmt.Println(err)
 		return fmt.Errorf("input error: %w", err)
