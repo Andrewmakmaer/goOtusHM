@@ -53,7 +53,6 @@ func main() {
 			default:
 				if err := tcpClient.Receive(); err != nil {
 					cancel()
-					return
 				}
 			}
 		}
