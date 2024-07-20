@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -20,20 +23,51 @@ func init() {
 func main() {
 	host, port = os.Args[len(os.Args)-2], os.Args[len(os.Args)-1]
 	dstAddr := net.JoinHostPort(host, port)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 
 	tcpClient := NewTelnetClient(dstAddr, timeout, os.Stdin, os.Stdout)
 	err := tcpClient.Connect()
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		return
 	}
+	defer tcpClient.Close()
 
 	go func() {
-		for {
-			tcpClient.Receive()
+		select {
+		case <-signalChan:
+			cancel()
+		case <-ctx.Done():
 		}
 	}()
 
-	tcpClient.Send()
-	tcpClient.Close()
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				if err := tcpClient.Receive(); err != nil {
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+
+	go func() {
+		if err := tcpClient.Send(); err != nil {
+			cancel()
+		} else {
+			fmt.Println("Exit program")
+			cancel()
+			return
+		}
+	}()
+
+	<-ctx.Done()
 }

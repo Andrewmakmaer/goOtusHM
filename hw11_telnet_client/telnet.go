@@ -42,7 +42,6 @@ func (c *client) Send() error {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		fmt.Println(err)
 		return fmt.Errorf("input error: %w", err)
 	}
 	return nil

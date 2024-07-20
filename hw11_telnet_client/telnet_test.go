@@ -62,4 +62,12 @@ func TestTelnetClient(t *testing.T) {
 
 		wg.Wait()
 	})
+
+	t.Run("Test false connection", func(t *testing.T) {
+		in := &bytes.Buffer{}
+		out := &bytes.Buffer{}
+		client := NewTelnetClient("localhost:8080", 200*time.Millisecond, io.NopCloser(in), out)
+		err := client.Connect()
+		require.Error(t, err)
+	})
 }
