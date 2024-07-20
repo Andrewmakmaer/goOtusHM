@@ -63,7 +63,6 @@ func main() {
 		if err := tcpClient.Send(); err != nil {
 			cancel()
 		} else {
-			fmt.Println("Exit program")
 			cancel()
 			return
 		}
