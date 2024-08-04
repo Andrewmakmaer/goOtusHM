@@ -4,13 +4,20 @@ import (
 	"context"
 )
 
-type App struct { // TODO
+type App struct {
 }
 
-type Logger interface { // TODO
+type Config interface {
 }
 
-type Storage interface { // TODO
+type Logger interface {
+	Debug(string)
+	Info(string)
+	Warn(string)
+	Error(string)
+}
+
+type Storage interface {
 }
 
 func New(logger Logger, storage Storage) *App {

@@ -1,0 +1,10 @@
+logging:
+  level: "DEBUG"
+  type: "json"
+
+storage:
+  type: "inmemory"
+
+http:
+  host: "localhost"
+  port: "8888"
