@@ -8,9 +8,9 @@ import (
 )
 
 type message struct {
-	Timestamp time.Time
-	Message   string
-	Level     string
+	Timestamp time.Time              `json:"timestamp"`
+	Level     string                 `json:"level"`
+	Data      map[string]interface{} `json:"data"`
 }
 
 type Logger struct {
@@ -30,50 +30,43 @@ func New(levelStr, logType string) *Logger {
 	return &Logger{level: loggerMap[levelStr], loggerType: logType}
 }
 
-func (l Logger) Debug(msg string) {
-	if l.level > 1 {
+func (l Logger) log(level string, keyvals ...interface{}) {
+	if l.level > loggerMap[level] {
 		return
 	}
-	l.printer(msg, "DEBUG")
+	l.printer(level, keyvals...)
 }
 
-func (l Logger) Info(msg string) {
-	if l.level > 2 {
-		return
+func (l Logger) Debug(keyvals ...interface{})    { l.log("DEBUG", keyvals...) }
+func (l Logger) Info(keyvals ...interface{})     { l.log("INFO", keyvals...) }
+func (l Logger) Warn(keyvals ...interface{})     { l.log("WARN", keyvals...) }
+func (l Logger) Error(keyvals ...interface{})    { l.log("ERROR", keyvals...) }
+func (l Logger) Critical(keyvals ...interface{}) { l.log("CRITICAL", keyvals...) }
+
+func (l Logger) printer(msgLvl string, keyvals ...interface{}) {
+	data := make(map[string]interface{})
+	for i := 0; i < len(keyvals); i += 2 {
+		if i+1 < len(keyvals) {
+			key, ok := keyvals[i].(string)
+			if !ok {
+				key = fmt.Sprintf("%v", keyvals[i])
+			}
+			data[key] = keyvals[i+1]
+		}
 	}
-	l.printer(msg, "INFO")
-}
 
-func (l Logger) Warn(msg string) {
-	if l.level > 3 {
-		return
-	}
-	l.printer(msg, "WARN")
-}
+	message := message{Timestamp: time.Now(), Level: msgLvl, Data: data}
 
-func (l Logger) Error(msg string) {
-	if l.level > 4 {
-		return
-	}
-	l.printer(msg, "ERROR")
-}
-
-func (l Logger) Critical(msg string) {
-	l.printer(msg, "CRITICAL")
-}
-
-func (l Logger) printer(msg string, msgLvl string) {
-	message := message{Timestamp: time.Now(), Message: msg, Level: msgLvl}
 	switch l.loggerType {
 	case "json":
 		b, err := json.Marshal(message)
 		if err != nil {
-			fmt.Println("No write", msg)
+			fmt.Println("Error marshaling JSON:", err)
 			return
 		}
 		os.Stdout.Write(b)
 		os.Stdout.WriteString("\n")
-	case "unstructed":
-		fmt.Println(time.Now(), msg, msgLvl)
+	case "unstructured":
+		fmt.Printf("%s %s %v\n", time.Now().Format(time.RFC3339), msgLvl, data)
 	}
 }

@@ -11,9 +11,9 @@ import (
 // Организация конфига в main принуждает нас сужать API компонентов, использовать
 // при их конструировании только необходимые параметры, а также уменьшает вероятность циклической зависимости.
 type Config struct {
-	Logger  Logging `yaml:"logging"`
-	Storage Storage `yaml:"storage"`
-	Server  HTTP    `yaml:"http"`
+	Logger  Logging       `yaml:"logging"`
+	Storage StorageConfig `yaml:"storage"`
+	Server  HTTP          `yaml:"http"`
 }
 
 type Logging struct {
@@ -21,11 +21,19 @@ type Logging struct {
 	Type  string `yaml:"type"`
 }
 
-type Storage struct {
-	Type     string `yaml:"type"`
-	Host     string `yaml:"host"`
-	Port     string `yaml:"port"`
+type StorageConfig struct {
+	Type     string          `yaml:"type"`
+	InMemory *InMemoryConfig `yaml:"inmemory,omitempty"`
+	DB       *DBConfig       `yaml:"db,omitempty"`
+}
+
+type InMemoryConfig struct{}
+
+type DBConfig struct {
+	Endpoint string `yaml:"endpoint"`
 	Database string `yaml:"database"`
+	User     string `yaml:"user"`
+	Pass     string `yaml:"pass"`
 }
 
 type HTTP struct {

@@ -3,7 +3,12 @@ logging:
   type: "json"
 
 storage:
-  type: "inmemory"
+  type: "db"
+  db:
+    endpoint: "localhost:5432"
+    user: "postgres"
+    database: "events"
+    pass: "1234"
 
 http:
   host: "localhost"

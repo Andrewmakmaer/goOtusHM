@@ -3,8 +3,6 @@ package storage
 import (
 	"errors"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 var (
@@ -23,21 +21,21 @@ type Event struct {
 }
 
 func NewEvent(
+	id string,
 	title string,
 	descrip string,
 	sTime time.Time,
 	eTime time.Time,
-	userId string,
+	userID string,
 	callDuration time.Duration,
 ) *Event {
-	id := uuid.New()
 	return &Event{
-		ID:           id.String(),
+		ID:           id,
 		Title:        title,
 		Description:  descrip,
 		StartTime:    sTime,
 		EndTime:      eTime,
-		UserID:       userId,
+		UserID:       userID,
 		CallDuration: callDuration,
 	}
 }

@@ -8,7 +8,7 @@ import (
 )
 
 type Storage struct {
-	mu    sync.RWMutex //nolint:unused
+	mu    sync.RWMutex
 	store map[string][]storage.Event
 }
 
@@ -61,28 +61,28 @@ func (s *Storage) UpdateEvent(updatedEvent storage.Event) error {
 	return nil
 }
 
-func (s *Storage) DeleteEvent(eventId, userId string) error {
+func (s *Storage) DeleteEvent(eventID, userID string) error {
 	s.mu.Lock()
-	eventList := s.store[userId]
+	eventList := s.store[userID]
 	s.mu.Unlock()
 	var i int
 	for i = range len(eventList) {
-		if eventList[i].ID == eventId {
+		if eventList[i].ID == eventID {
 			break
 		}
 	}
 	eventList[i] = eventList[len(eventList)-1]
 
 	s.mu.Lock()
-	s.store[userId] = eventList[:len(eventList)-1]
+	s.store[userID] = eventList[:len(eventList)-1]
 	s.mu.Unlock()
 	return nil
 }
 
-func (s *Storage) ListEventsDay(userId string, currentDate time.Time) []storage.Event {
+func (s *Storage) ListEventsDay(userID string, currentDate time.Time) ([]storage.Event, error) {
 	var resultEvents []storage.Event
 	s.mu.RLock()
-	events := s.store[userId]
+	events := s.store[userID]
 	s.mu.RUnlock()
 
 	dayBegin := time.Date(currentDate.Year(), currentDate.Month(), 1, 0, 0, 0, 0, currentDate.Location())
@@ -93,13 +93,13 @@ func (s *Storage) ListEventsDay(userId string, currentDate time.Time) []storage.
 			resultEvents = append(resultEvents, v)
 		}
 	}
-	return resultEvents
+	return resultEvents, nil
 }
 
-func (s *Storage) ListEventsWeek(userId string, currentDate time.Time) []storage.Event {
+func (s *Storage) ListEventsWeek(userID string, currentDate time.Time) ([]storage.Event, error) {
 	var resultEvents []storage.Event
 	s.mu.RLock()
-	events := s.store[userId]
+	events := s.store[userID]
 	s.mu.RUnlock()
 
 	year, week := currentDate.ISOWeek()
@@ -115,13 +115,13 @@ func (s *Storage) ListEventsWeek(userId string, currentDate time.Time) []storage
 			resultEvents = append(resultEvents, v)
 		}
 	}
-	return resultEvents
+	return resultEvents, nil
 }
 
-func (s *Storage) ListEventsMonth(userId string, currentDate time.Time) []storage.Event {
+func (s *Storage) ListEventsMonth(userID string, currentDate time.Time) ([]storage.Event, error) {
 	var resultEvents []storage.Event
 	s.mu.RLock()
-	events := s.store[userId]
+	events := s.store[userID]
 	s.mu.RUnlock()
 
 	monthStart := time.Date(currentDate.Year(), currentDate.Month(), 1, 0, 0, 0, 0, currentDate.Location())
@@ -132,7 +132,7 @@ func (s *Storage) ListEventsMonth(userId string, currentDate time.Time) []storag
 			resultEvents = append(resultEvents, v)
 		}
 	}
-	return resultEvents
+	return resultEvents, nil
 }
 
 func timeInBetween(startTime, finishTime, currentTime time.Time) bool {
