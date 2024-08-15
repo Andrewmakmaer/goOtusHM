@@ -8,16 +8,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
-	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
-	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	"github.com/Andrewmakmaer/goOtusHM/hw12_13_14_15_calendar/internal/app"
+	"github.com/Andrewmakmaer/goOtusHM/hw12_13_14_15_calendar/internal/logger"
+	internalhttp "github.com/Andrewmakmaer/goOtusHM/hw12_13_14_15_calendar/internal/server/http"
+	memorystorage "github.com/Andrewmakmaer/goOtusHM/hw12_13_14_15_calendar/internal/storage/memory"
+	sqlstorage "github.com/Andrewmakmaer/goOtusHM/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
 var configFile string
 
 func init() {
-	flag.StringVar(&configFile, "config", "/etc/calendar/config.toml", "Path to configuration file")
+	flag.StringVar(&configFile, "config", "/etc/calendar/config.yml", "Path to configuration file")
 }
 
 func main() {
@@ -28,13 +29,21 @@ func main() {
 		return
 	}
 
-	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
+	config := NewConfig(configFile)
+	logg := logger.New(config.Logger.Level, config.Logger.Type)
+	logg.Debug("succes load configuration")
 
-	storage := memorystorage.New()
-	calendar := app.New(logg, storage)
+	var storage app.Storage
+	switch config.Storage.Type {
+	case "inmemory":
+		storage = memorystorage.New()
+	case "db":
+		storage = sqlstorage.New(config.Storage.DB.Endpoint, config.Storage.DB.Database,
+			config.Storage.DB.User, config.Storage.DB.Pass)
+	}
+	calendar := app.New(logg, storage, config.Server.Port, config.Server.Host)
 
-	server := internalhttp.NewServer(logg, calendar)
+	server := internalhttp.NewServer(logg, calendar, config.Server.Host, config.Server.Port)
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
