@@ -3,13 +3,16 @@ logging:
   type: "json"
 
 storage:
-  type: "db"
-  db:
-    endpoint: "localhost:5432"
-    user: "postgres"
-    database: "events"
-    pass: "1234"
+  type: "inmemory"
+  # db:
+  #   endpoint: "localhost:5432"
+  #   user: "postgres"
+  #   database: "events"
+  #   pass: "1234"
 
 http:
   host: "localhost"
   port: "8888"
+
+grpc:
+  port: "8889"

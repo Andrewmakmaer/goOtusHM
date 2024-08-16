@@ -10,6 +10,7 @@ import (
 
 	"github.com/Andrewmakmaer/goOtusHM/hw12_13_14_15_calendar/internal/app"
 	"github.com/Andrewmakmaer/goOtusHM/hw12_13_14_15_calendar/internal/logger"
+	internalgrpc "github.com/Andrewmakmaer/goOtusHM/hw12_13_14_15_calendar/internal/server/grpc"
 	internalhttp "github.com/Andrewmakmaer/goOtusHM/hw12_13_14_15_calendar/internal/server/http"
 	memorystorage "github.com/Andrewmakmaer/goOtusHM/hw12_13_14_15_calendar/internal/storage/memory"
 	sqlstorage "github.com/Andrewmakmaer/goOtusHM/hw12_13_14_15_calendar/internal/storage/sql"
@@ -44,6 +45,7 @@ func main() {
 	calendar := app.New(logg, storage, config.Server.Port, config.Server.Host)
 
 	server := internalhttp.NewServer(logg, calendar, config.Server.Host, config.Server.Port)
+	grpcServer := internalgrpc.NewServer(logg, calendar, config.GRPCServer.Port)
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -52,15 +54,23 @@ func main() {
 	go func() {
 		<-ctx.Done()
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+		_, cancel := context.WithTimeout(context.Background(), time.Second*3)
 		defer cancel()
+
+		if err := grpcServer.Stop(ctx); err != nil {
+			logg.Error("failed to stop http server: " + err.Error())
+		}
 
 		if err := server.Stop(ctx); err != nil {
 			logg.Error("failed to stop http server: " + err.Error())
 		}
 	}()
 
-	logg.Info("calendar is running...")
+	logg.Info("message", "calendar is running...")
+
+	go func() {
+		grpcServer.Start(ctx)
+	}()
 
 	if err := server.Start(ctx); err != nil {
 		logg.Error("failed to start http server: " + err.Error())

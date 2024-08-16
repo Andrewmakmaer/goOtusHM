@@ -175,6 +175,19 @@ func (s *Storage) ListEventsMonth(userID string, currentDate time.Time) ([]stora
 	return s.listEvents(userID, startOfMonth, endOfMonth)
 }
 
+func (s *Storage) GetEvent(eventID, userID string) (storage.Event, error) {
+	query := `SELECT FROM events WHERE id = $1 AND userID = $2`
+
+	var e storage.Event
+	err := s.connect.QueryRow(query, eventID, userID).Scan(&e.ID, &e.Title,
+		&e.Description, &e.StartTime, &e.EndTime, &e.UserID, &e.CallDuration)
+	if err != nil {
+		return e, fmt.Errorf("failed to get event: %w", err)
+	}
+
+	return e, nil
+}
+
 func (s *Storage) listEvents(userID string, startDate, endDate time.Time) ([]storage.Event, error) {
 	query := `SELECT id, title, description, starttime, endtime, userID, callduration 
               FROM events 

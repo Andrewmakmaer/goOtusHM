@@ -63,13 +63,24 @@ func (s *Storage) UpdateEvent(updatedEvent storage.Event) error {
 
 func (s *Storage) DeleteEvent(eventID, userID string) error {
 	s.mu.Lock()
-	eventList := s.store[userID]
+	eventList, ok := s.store[userID]
 	s.mu.Unlock()
+	if !ok {
+		return storage.ErrNoUser
+	}
+
 	var i int
-	for i = range len(eventList) {
+	var searchedFlag bool
+	for i := range len(eventList) {
 		if eventList[i].ID == eventID {
+			searchedFlag = true
 			break
 		}
+		searchedFlag = false
+	}
+
+	if len(eventList) == 0 || !searchedFlag {
+		return storage.ErrNoFind
 	}
 	eventList[i] = eventList[len(eventList)-1]
 
@@ -133,6 +144,19 @@ func (s *Storage) ListEventsMonth(userID string, currentDate time.Time) ([]stora
 		}
 	}
 	return resultEvents, nil
+}
+
+func (s *Storage) GetEvent(eventID, userID string) (storage.Event, error) {
+	s.mu.RLock()
+	events := s.store[userID]
+	s.mu.RUnlock()
+
+	for _, v := range events {
+		if v.ID == eventID {
+			return v, nil
+		}
+	}
+	return storage.Event{}, storage.ErrNoFind
 }
 
 func timeInBetween(startTime, finishTime, currentTime time.Time) bool {

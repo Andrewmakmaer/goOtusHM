@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package event;
+option go_package = "./;pb";
+
+service Calendar {
+    rpc AddEvent (AddEventRequest) returns (StatusMessageResponce) {}
+    rpc UpdateEvent (UpdateEventRequest) returns (StatusMessageResponce) {}
+    rpc DeleteEvent (DeleteEventRequest) returns (StatusMessageResponce) {}
+    rpc ListEvent (ListEventRequest) returns (EventsListResponce) {}
+}
+
+message Event {
+    string id = 1;
+    string user_id = 2;
+    string title = 3;
+    string description = 4;
+    string start_time = 5;
+    string end_time = 6;
+    string call_duration =7;
+}
+
+message AddEventRequest {
+    Event change = 1;
+}
+
+message UpdateEventRequest {
+    Event change = 1;
+}
+
+message DeleteEventRequest {
+    string id = 1;
+    string user_id = 2;
+}
+
+message ListEventRequest {
+    string user_id = 1;
+    string time_by = 2;
+}
+
+message StatusMessageResponce {
+    string message = 1;
+}
+
+message EventsListResponce {
+    string message = 1;
+}
