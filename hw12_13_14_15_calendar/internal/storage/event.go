@@ -8,16 +8,18 @@ import (
 var (
 	ErrDateBusy  = errors.New("date is Busy")
 	ErrTimeShift = errors.New("end time of event before event start")
+	ErrNoFind    = errors.New("no find event by id")
+	ErrNoUser    = errors.New("not found user by id")
 )
 
 type Event struct {
-	ID           string
-	Title        string
-	Description  string
-	StartTime    time.Time
-	EndTime      time.Time
-	UserID       string
-	CallDuration time.Duration
+	ID           string        `json:"id"`
+	Title        string        `json:"title"`
+	Description  string        `json:"description"`
+	StartTime    time.Time     `json:"starttime"`
+	EndTime      time.Time     `json:"endtime"`
+	UserID       string        `json:"userid"`
+	CallDuration time.Duration `json:"callduration"`
 }
 
 func NewEvent(

@@ -37,11 +37,12 @@ func (l Logger) log(level string, keyvals ...interface{}) {
 	l.printer(level, keyvals...)
 }
 
-func (l Logger) Debug(keyvals ...interface{})    { l.log("DEBUG", keyvals...) }
-func (l Logger) Info(keyvals ...interface{})     { l.log("INFO", keyvals...) }
-func (l Logger) Warn(keyvals ...interface{})     { l.log("WARN", keyvals...) }
-func (l Logger) Error(keyvals ...interface{})    { l.log("ERROR", keyvals...) }
-func (l Logger) Critical(keyvals ...interface{}) { l.log("CRITICAL", keyvals...) }
+func (l Logger) Debug(keyvals ...interface{})     { l.log("DEBUG", keyvals...) }
+func (l Logger) Info(keyvals ...interface{})      { l.log("INFO", keyvals...) }
+func (l Logger) Warn(keyvals ...interface{})      { l.log("WARN", keyvals...) }
+func (l Logger) Error(keyvals ...interface{})     { l.log("ERROR", keyvals...) }
+func (l Logger) Critical(keyvals ...interface{})  { l.log("CRITICAL", keyvals...) }
+func (l Logger) Log(keyvals ...interface{}) error { l.log("INFO", keyvals...); return nil }
 
 func (l Logger) printer(msgLvl string, keyvals ...interface{}) {
 	data := make(map[string]interface{})

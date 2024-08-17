@@ -2,7 +2,7 @@ package app
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"time"
 
 	"github.com/Andrewmakmaer/goOtusHM/hw12_13_14_15_calendar/internal/storage"
@@ -27,6 +27,7 @@ type Storage interface {
 	ListEventsDay(userID string, currentDate time.Time) ([]storage.Event, error)
 	ListEventsWeek(userID string, currentDate time.Time) ([]storage.Event, error)
 	ListEventsMonth(userID string, currentDate time.Time) ([]storage.Event, error)
+	GetEvent(eventID, userID string) (storage.Event, error)
 }
 
 func New(logger Logger, storage Storage, port, host string) *App {
@@ -42,7 +43,7 @@ func (a *App) CreateEvent(ctx context.Context, id, userID, title, descrip, bTime
 		return err
 	}
 
-	beginTime, err := time.Parse(time.RFC3339, eTime)
+	beginTime, err := time.Parse(time.RFC3339, bTime)
 	if err != nil {
 		return err
 	}
@@ -56,6 +57,7 @@ func (a *App) CreateEvent(ctx context.Context, id, userID, title, descrip, bTime
 
 	err = a.store.AddEvent(*newEvent)
 	if err != nil {
+		a.logg.Error("failed add event ", err.Error())
 		return err
 	}
 
@@ -63,24 +65,41 @@ func (a *App) CreateEvent(ctx context.Context, id, userID, title, descrip, bTime
 }
 
 func (a *App) UpdateEvent(ctx context.Context, id, userID, title, descrip, bTime, eTime, callDur string) error {
-	endTime, err := time.Parse(time.RFC3339, eTime)
+	updatedEvent, err := a.store.GetEvent(id, userID)
 	if err != nil {
 		return err
 	}
 
-	beginTime, err := time.Parse(time.RFC3339, eTime)
-	if err != nil {
-		return err
+	if descrip != "" {
+		updatedEvent.Title = descrip
 	}
 
-	callDuration, err := time.ParseDuration(callDur)
-	if err != nil {
-		return err
+	if title != "" {
+		updatedEvent.Title = title
 	}
 
-	newEvent := storage.NewEvent(id, title, descrip, beginTime, endTime, userID, callDuration)
+	if bTime != "" {
+		updatedEvent.StartTime, err = time.Parse(time.RFC3339, bTime)
+		if err != nil {
+			return err
+		}
+	}
 
-	err = a.store.UpdateEvent(*newEvent)
+	if eTime != "" {
+		updatedEvent.EndTime, err = time.Parse(time.RFC3339, eTime)
+		if err != nil {
+			return err
+		}
+	}
+
+	if callDur != "" {
+		updatedEvent.CallDuration, err = time.ParseDuration(callDur)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = a.store.UpdateEvent(updatedEvent)
 	if err != nil {
 		return err
 	}
@@ -89,7 +108,7 @@ func (a *App) UpdateEvent(ctx context.Context, id, userID, title, descrip, bTime
 }
 
 func (a *App) DeleteEvent(userID, eventID string) error {
-	err := a.store.DeleteEvent(userID, eventID)
+	err := a.store.DeleteEvent(eventID, userID)
 	if err != nil {
 		return err
 	}
@@ -97,42 +116,32 @@ func (a *App) DeleteEvent(userID, eventID string) error {
 	return nil
 }
 
-func (a *App) ListEventDay(userID string) error {
+func (a *App) ListEventDay(userID string) (string, error) {
 	events, err := a.store.ListEventsDay(userID, time.Now())
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	// пока так, потом переделаем на нормально
-	for _, item := range events {
-		fmt.Println(item)
-	}
-
-	return nil
+	ev, _ := json.Marshal(events)
+	return string(ev), nil
 }
 
-func (a *App) ListEventWeek(userID string) error {
+func (a *App) ListEventWeek(userID string) (string, error) {
 	events, err := a.store.ListEventsWeek(userID, time.Now())
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	for _, item := range events {
-		fmt.Println(item)
-	}
-
-	return nil
+	ev, _ := json.Marshal(events)
+	return string(ev), nil
 }
 
-func (a *App) ListEventsMonth(userID string) error {
+func (a *App) ListEventsMonth(userID string) (string, error) {
 	events, err := a.store.ListEventsMonth(userID, time.Now())
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	for _, item := range events {
-		fmt.Println(item)
-	}
-
-	return nil
+	ev, _ := json.Marshal(events)
+	return string(ev), nil
 }
