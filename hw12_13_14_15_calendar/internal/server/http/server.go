@@ -17,7 +17,7 @@ type eventFields struct {
 	EndTime      string `json:"endtime,omitempty"`
 	UserID       string `json:"userid"`
 	CallDuration string `json:"callduration,omitempty"`
-	SearchTime   string `json:"searchby,omitempty"`
+	// SearchTime   string `json:"searchby,omitempty"`
 }
 
 type Server struct {
@@ -52,10 +52,10 @@ func NewServer(logger Logger, app Application, host, port string) *Server {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/hello", loggingMiddleware(handler.Hello))
-	mux.HandleFunc("/create", loggingMiddleware(handler.CreateEvent))
-	mux.HandleFunc("/update", loggingMiddleware(handler.UpdateEvent))
-	mux.HandleFunc("/delete", loggingMiddleware(handler.DeleteEvent))
-	mux.HandleFunc("/list", loggingMiddleware(handler.ListEvent))
+	mux.HandleFunc("POST /events/", loggingMiddleware(handler.CreateEvent))
+	mux.HandleFunc("PUT /events/{user_id}/{id}", loggingMiddleware(handler.UpdateEvent))
+	mux.HandleFunc("DELETE /events/{user_id}/{id}", loggingMiddleware(handler.DeleteEvent))
+	mux.HandleFunc("GET /events/{user_id}/{by_time}", loggingMiddleware(handler.ListEvent))
 
 	newServer := &http.Server{
 		Addr:         addr,
@@ -105,7 +105,7 @@ func (h *Handler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 
 	eventFields := unmarshBody(w, r)
 
-	err := h.app.UpdateEvent(ctx, eventFields.ID, eventFields.UserID, eventFields.Title,
+	err := h.app.UpdateEvent(ctx, r.PathValue("id"), r.PathValue("user_id"), eventFields.Title,
 		eventFields.Description, eventFields.StartTime, eventFields.EndTime, eventFields.CallDuration)
 	if err != nil {
 		errorResponse(w, "Bad Request "+err.Error(), http.StatusBadRequest)
@@ -119,9 +119,7 @@ func (h *Handler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	_, cansel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cansel()
 
-	eventFields := unmarshBody(w, r)
-
-	err := h.app.DeleteEvent(eventFields.UserID, eventFields.ID)
+	err := h.app.DeleteEvent(r.PathValue("user_id"), r.PathValue("id"))
 	if err != nil {
 		errorResponse(w, "Bad Request "+err.Error(), http.StatusBadRequest)
 		return
@@ -133,17 +131,16 @@ func (h *Handler) ListEvent(w http.ResponseWriter, r *http.Request) {
 	_, cansel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cansel()
 
-	eventFields := unmarshBody(w, r)
 	var err error
 	var result string
 
-	switch eventFields.SearchTime {
+	switch r.PathValue("by_time") {
 	case "day":
-		result, err = h.app.ListEventDay(eventFields.UserID)
+		result, err = h.app.ListEventDay(r.PathValue("user_id"))
 	case "week":
-		result, err = h.app.ListEventWeek(eventFields.UserID)
+		result, err = h.app.ListEventWeek(r.PathValue("user_id"))
 	case "month":
-		result, err = h.app.ListEventsMonth(eventFields.UserID)
+		result, err = h.app.ListEventsMonth(r.PathValue("user_id"))
 	}
 
 	if err != nil {
