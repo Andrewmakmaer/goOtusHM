@@ -22,6 +22,13 @@ type Event struct {
 	CallDuration time.Duration `json:"callduration"`
 }
 
+type EventNotification struct {
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	StartTime string `json:"starttime"`
+	UserID    string `json:"userid"`
+}
+
 func NewEvent(
 	id string,
 	title string,
@@ -40,4 +47,9 @@ func NewEvent(
 		UserID:       userID,
 		CallDuration: callDuration,
 	}
+}
+
+func NewNotification(id, title string, startTime time.Time, userID string) EventNotification {
+	date := startTime.String()
+	return EventNotification{ID: id, Title: title, StartTime: date, UserID: userID}
 }

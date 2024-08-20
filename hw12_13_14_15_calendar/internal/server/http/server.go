@@ -90,9 +90,15 @@ func (h *Handler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 
 	eventFields := unmarshBody(w, r)
 
+	h.logger.Info("message", "create event request", "userID", eventFields.UserID,
+		"eventID", eventFields.UserID, "title", eventFields.Title,
+		"callDuration", eventFields.CallDuration)
+
 	err := h.app.CreateEvent(ctx, eventFields.ID, eventFields.UserID, eventFields.Title,
 		eventFields.Description, eventFields.StartTime, eventFields.EndTime, eventFields.CallDuration)
 	if err != nil {
+		h.logger.Error("message", "fail to create event", "userID", eventFields.UserID,
+			"eventID", eventFields.UserID, "title", eventFields.Title)
 		errorResponse(w, "Bad Request "+err.Error(), http.StatusBadRequest)
 		return
 	}
