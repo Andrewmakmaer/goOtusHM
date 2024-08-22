@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/Andrewmakmaer/goOtusHM/hw12_13_14_15_calendar/internal/storage"
@@ -19,36 +17,22 @@ import (
 
 type Storage struct {
 	connect *sql.DB
-	dbHost  string
 	dbName  string
-	dbUser  string
-	dbPass  string
 }
 
-func New(host, db, user, pass string) *Storage {
-	return &Storage{
-		dbHost: host,
-		dbName: db,
-		dbUser: user,
-		dbPass: pass,
-	}
-}
-
-func (s *Storage) Connect(ctx context.Context) error {
-	connStr := fmt.Sprintf("postgres://%v:%v@%v/%v?sslmode=disable", s.dbUser, s.dbPass, s.dbHost, s.dbName)
+func New(host, dbName, user, pass string) (*Storage, error) {
+	connStr := fmt.Sprintf("postgres://%v:%v@%v/%v?sslmode=disable", user, pass, host, dbName)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return err
+		return &Storage{}, err
 	}
 
-	err = db.PingContext(ctx)
+	err = db.Ping()
 	if err != nil {
-		return fmt.Errorf("failed connect to database: %w", err)
+		return &Storage{}, fmt.Errorf("failed connect to database: %w", err)
 	}
 
-	s.connect = db
-
-	return nil
+	return &Storage{connect: db, dbName: dbName}, nil
 }
 
 func (s *Storage) Close(ctx context.Context) error {
@@ -89,6 +73,7 @@ func (s *Storage) RunMigrations(migrationsDir string) error {
 }
 
 func (s *Storage) AddEvent(e storage.Event) error {
+	fmt.Println(e)
 	if err := s.checkEventOverlap(e); err != nil {
 		return err
 	}
@@ -96,7 +81,9 @@ func (s *Storage) AddEvent(e storage.Event) error {
 	query := `INSERT INTO events(id, title, description, starttime, endtime, userID, callduration)
               VALUES ($1, $2, $3, $4, $5, $6, $7)`
 
-	_, err := s.connect.Exec(query, e.ID, e.Title, e.Description, e.StartTime, e.EndTime, e.UserID, e.CallDuration)
+	fmt.Println(e.StartTime, e.EndTime)
+	_, err := s.connect.Exec(query, e.ID, e.Title, e.Description, e.StartTime,
+		e.EndTime, e.UserID, e.CallDuration.String())
 	if err != nil {
 		return fmt.Errorf("failed to add event: %w", err)
 	}
@@ -114,7 +101,7 @@ func (s *Storage) UpdateEvent(updatedEvent storage.Event) error {
 
 	result, err := s.connect.Exec(query, updatedEvent.Title, updatedEvent.Description,
 		updatedEvent.StartTime, updatedEvent.EndTime,
-		updatedEvent.CallDuration, updatedEvent.ID, updatedEvent.UserID)
+		updatedEvent.CallDuration.String(), updatedEvent.ID, updatedEvent.UserID)
 	if err != nil {
 		return fmt.Errorf("failed to update event: %w", err)
 	}
@@ -176,16 +163,52 @@ func (s *Storage) ListEventsMonth(userID string, currentDate time.Time) ([]stora
 }
 
 func (s *Storage) GetEvent(eventID, userID string) (storage.Event, error) {
-	query := `SELECT FROM events WHERE id = $1 AND userID = $2`
+	query := `SELECT * FROM events WHERE id = $1 AND userID = $2`
 
 	var e storage.Event
-	err := s.connect.QueryRow(query, eventID, userID).Scan(&e.ID, &e.Title,
-		&e.Description, &e.StartTime, &e.EndTime, &e.UserID, &e.CallDuration)
+	var callDurationStr string
+	row := s.connect.QueryRow(query, eventID, userID)
+	err := row.Scan(&e.ID, &e.Title,
+		&e.Description, &e.StartTime, &e.EndTime, &e.UserID, &callDurationStr)
 	if err != nil {
 		return e, fmt.Errorf("failed to get event: %w", err)
 	}
 
+	callDuration, err := time.ParseDuration(callDurationStr)
+	if err != nil {
+		return e, fmt.Errorf("failed to parse call duration: %w", err)
+	}
+	e.CallDuration = callDuration
+
 	return e, nil
+}
+
+func (s *Storage) GetAllEvents() ([]storage.Event, error) {
+	query := `SELECT * FROM events`
+
+	var events []storage.Event
+	rows, err := s.connect.Query(query)
+	if err != nil {
+		return events, fmt.Errorf("failed to get event: %w", err)
+	}
+
+	for rows.Next() {
+		var e storage.Event
+		var callDurationStr string
+		err := rows.Scan(&e.ID, &e.Title, &e.Description, &e.StartTime, &e.EndTime, &e.UserID, &callDurationStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan event: %w", err)
+		}
+		callDuration, err := time.ParseDuration(callDurationStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse call duration: %w", err)
+		}
+		e.CallDuration = callDuration
+
+		events = append(events, e)
+	}
+
+	return events, nil
 }
 
 func (s *Storage) listEvents(userID string, startDate, endDate time.Time) ([]storage.Event, error) {
@@ -208,7 +231,7 @@ func (s *Storage) listEvents(userID string, startDate, endDate time.Time) ([]sto
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan event: %w", err)
 		}
-		callDuration, err := parsePgInterval(callDurationStr)
+		callDuration, err := time.ParseDuration(callDurationStr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse call duration: %w", err)
 		}
@@ -242,28 +265,4 @@ func (s *Storage) checkEventOverlap(event storage.Event) error {
 	}
 
 	return nil
-}
-
-func parsePgInterval(i string) (time.Duration, error) {
-	parts := strings.Split(i, ":")
-	if len(parts) != 3 {
-		return 0, fmt.Errorf("invalid interval format")
-	}
-
-	hours, err := strconv.ParseInt(parts[0], 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("failed to parse hours: %w", err)
-	}
-
-	minutes, err := strconv.ParseInt(parts[1], 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("failed to parse minutes: %w", err)
-	}
-
-	seconds, err := strconv.ParseInt(parts[2], 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("failed to parse seconds: %w", err)
-	}
-
-	return time.Duration(hours)*time.Hour + time.Duration(minutes)*time.Minute + time.Duration(seconds)*time.Second, nil
 }

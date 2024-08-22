@@ -40,6 +40,7 @@ func New(logger Logger, storage Storage, port, host string) *App {
 func (a *App) CreateEvent(ctx context.Context, id, userID, title, descrip, bTime, eTime, callDur string) error {
 	endTime, err := time.Parse(time.RFC3339, eTime)
 	if err != nil {
+		a.logg.Error("message", err.Error())
 		return err
 	}
 

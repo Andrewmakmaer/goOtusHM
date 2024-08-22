@@ -1,0 +1,13 @@
+logging:
+  level: "DEBUG"
+  type: "json"
+
+storage:
+  endpoint: "localhost:5432"
+  user: "postgres"
+  database: "postgres"
+  pass: "1234"
+
+brocker:
+  endpoint: "amqp://guest:guest@localhost:5672/"
+  queue: "notification"

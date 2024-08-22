@@ -1,0 +1,7 @@
+logging:
+  level: "DEBUG"
+  type: "json"
+
+brocker:
+  endpoint: "amqp://guest:guest@localhost:5672/"
+  queue: "notification"
