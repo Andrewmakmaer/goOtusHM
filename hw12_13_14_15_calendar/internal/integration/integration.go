@@ -166,7 +166,7 @@ func createEvent(userID, eventID string, event Event) (string, error) {
 
 func deleteEvent(userID, eventID string) error {
 	url := fmt.Sprintf("%s/events/%s/%s", calendarServiceURL, userID, eventID)
-	req, _ := http.NewRequest(http.MethodDelete, url, nil)
+	req, _ := http.NewRequest(http.MethodDelete, url, nil) //nolint:noctx
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
