@@ -1,0 +1,16 @@
+FROM golang:1.22 as build
+
+ENV BIN_FILE /opt/calendar/calendar-app
+ENV CODE_DIR /go/src/
+
+WORKDIR ${CODE_DIR}
+
+# Кэшируем слои с модулями
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
+COPY . ${CODE_DIR}
+
+# Контейнер не рантайм, тут, наверное, нет смысла делать качественный образ
+CMD go run cmd/integration_tests/main.go

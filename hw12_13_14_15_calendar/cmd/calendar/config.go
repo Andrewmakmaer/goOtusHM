@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
 
@@ -47,18 +48,46 @@ type GRPC struct {
 }
 
 func NewConfig(path string) Config {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		fmt.Println(err)
-		return Config{}
-	}
-
 	var config Config
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
-		fmt.Println(err)
-		return Config{}
+	if path != "" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			fmt.Println(err)
+			return Config{}
+		}
+
+		err = yaml.Unmarshal(data, &config)
+		if err != nil {
+			fmt.Println(err)
+			return Config{}
+		}
+	} else {
+		config = getFromEnv(config)
 	}
 
 	return config
+}
+
+func getFromEnv(cnf Config) Config {
+	viper.SetEnvPrefix("CALENDAR")
+	viper.AutomaticEnv()
+
+	cnf.Logger.Level = viper.GetString("Log_Level")
+	cnf.Logger.Type = viper.GetString("Log_Type")
+
+	cnf.Storage.Type = viper.GetString("DB_Type")
+
+	var db DBConfig
+	db.Endpoint = viper.GetString("DB_Endpoint")
+	db.Database = viper.GetString("DB_Database")
+	db.User = viper.GetString("DB_User")
+	db.Pass = viper.GetString("DB_Pass")
+	cnf.Storage.DB = &db
+
+	cnf.Server.Host = viper.GetString("HTTP_Host")
+	cnf.Server.Port = viper.GetString("HTTP_Port")
+
+	cnf.GRPCServer.Port = viper.GetString("GRPC_Port")
+
+	return cnf
 }

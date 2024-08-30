@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,7 +19,7 @@ import (
 var configFile string
 
 func init() {
-	flag.StringVar(&configFile, "config", "/etc/calendar/config.yml", "Path to configuration file")
+	flag.StringVar(&configFile, "config", "", "Path to configuration file")
 }
 
 func main() {
@@ -34,8 +33,6 @@ func main() {
 	config := NewConfig(configFile)
 	logg := logger.New(config.Logger.Level, config.Logger.Type)
 	logg.Debug("succes load configuration")
-	fmt.Println(config.Storage.DB.Endpoint, config.Storage.DB.Database,
-		config.Storage.DB.User, config.Storage.DB.Pass)
 
 	var storage app.Storage
 	switch config.Storage.Type {
@@ -48,6 +45,7 @@ func main() {
 			logg.Error("message", err.Error())
 			return
 		}
+		stor.RunMigrations("/migrations/")
 		storage = stor
 	}
 	calendar := app.New(logg, storage, config.Server.Port, config.Server.Host)

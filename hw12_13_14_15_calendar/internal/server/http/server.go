@@ -10,12 +10,12 @@ import (
 )
 
 type eventFields struct {
-	ID           string `json:"id,omitempty"`
-	Title        string `json:"title,omitempty"`
-	Description  string `json:"description,omitempty"`
-	StartTime    string `json:"starttime,omitempty"`
-	EndTime      string `json:"endtime,omitempty"`
-	UserID       string `json:"userid"`
+	// ID          string `json:"id,omitempty"`
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+	StartTime   string `json:"starttime,omitempty"`
+	EndTime     string `json:"endtime,omitempty"`
+	// UserID       string `json:"userid"`
 	CallDuration string `json:"callduration,omitempty"`
 	// SearchTime   string `json:"searchby,omitempty"`
 }
@@ -52,7 +52,7 @@ func NewServer(logger Logger, app Application, host, port string) *Server {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/hello", loggingMiddleware(handler.Hello))
-	mux.HandleFunc("POST /events/", loggingMiddleware(handler.CreateEvent))
+	mux.HandleFunc("POST /events/{user_id}/{id}", loggingMiddleware(handler.CreateEvent))
 	mux.HandleFunc("PUT /events/{user_id}/{id}", loggingMiddleware(handler.UpdateEvent))
 	mux.HandleFunc("DELETE /events/{user_id}/{id}", loggingMiddleware(handler.DeleteEvent))
 	mux.HandleFunc("GET /events/{user_id}/{by_time}", loggingMiddleware(handler.ListEvent))
@@ -90,15 +90,15 @@ func (h *Handler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 
 	eventFields := unmarshBody(w, r)
 
-	h.logger.Info("message", "create event request", "userID", eventFields.UserID,
-		"eventID", eventFields.UserID, "title", eventFields.Title,
+	h.logger.Info("message", "create event request", "userID", r.PathValue("user_id"),
+		"eventID", r.PathValue("id"), "title", eventFields.Title,
 		"callDuration", eventFields.CallDuration)
 
-	err := h.app.CreateEvent(ctx, eventFields.ID, eventFields.UserID, eventFields.Title,
+	err := h.app.CreateEvent(ctx, r.PathValue("id"), r.PathValue("user_id"), eventFields.Title,
 		eventFields.Description, eventFields.StartTime, eventFields.EndTime, eventFields.CallDuration)
 	if err != nil {
-		h.logger.Error("message", "fail to create event", "userID", eventFields.UserID,
-			"eventID", eventFields.UserID, "title", eventFields.Title)
+		h.logger.Error("message", "fail to create event", "userID", r.PathValue("user_id"),
+			"eventID", r.PathValue("id"), "title", eventFields.Title)
 		errorResponse(w, "Bad Request "+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -157,7 +157,7 @@ func (h *Handler) ListEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func errorResponse(w http.ResponseWriter, message string, httpStatusCode int) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(httpStatusCode)
 	resp := make(map[string]string)
 	resp["message"] = message

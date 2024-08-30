@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 )
 
@@ -34,18 +35,40 @@ type Brocker struct {
 }
 
 func NewConfig(path string) Config {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		fmt.Println(err)
-		return Config{}
-	}
-
 	var config Config
-	err = yaml.Unmarshal(data, &config)
-	if err != nil {
-		fmt.Println(err)
-		return Config{}
+	if path != "" {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			fmt.Println(err)
+			return Config{}
+		}
+
+		err = yaml.Unmarshal(data, &config)
+		if err != nil {
+			fmt.Println(err)
+			return Config{}
+		}
+	} else {
+		config = getFromEnv(config)
 	}
 
 	return config
+}
+
+func getFromEnv(cnf Config) Config {
+	viper.SetEnvPrefix("SCHEDULER")
+	viper.AutomaticEnv()
+
+	cnf.Logger.Level = viper.GetString("Log_Level")
+	cnf.Logger.Type = viper.GetString("Log_Type")
+
+	cnf.Storage.Endpoint = viper.GetString("DB_Endpoint")
+	cnf.Storage.Database = viper.GetString("DB_Database")
+	cnf.Storage.User = viper.GetString("DB_User")
+	cnf.Storage.Pass = viper.GetString("DB_Pass")
+
+	cnf.Brocker.Endpoint = viper.GetString("Brocker_Host")
+	cnf.Brocker.Queue = viper.GetString("Brocker_Queue")
+
+	return cnf
 }

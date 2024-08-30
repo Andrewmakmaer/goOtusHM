@@ -1,7 +1,10 @@
 BIN := "./bin/calendar"
 SCHEDULE_BIN := "./bin/calendar_scheduler"
 SENDER_BIN := "./bin/calendar_sender"
-DOCKER_IMG="calendar:develop"
+DOCKER_CALENDAR_IMG="calendar:develop"
+DOCKER_SCHEDULER_IMG="scheduler:develop"
+DOCKER_SENDER_IMG="sender:develop"
+DOCKER_INT_IMG="integration:develop"
 
 GIT_HASH := $(shell git log --format="%h" -n 1)
 LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
@@ -32,11 +35,38 @@ run-all: build
 	$(BIN) -config ./configs/calendar_config.yml & \
 	$(SCHEDULE_BIN) -config ./configs/scheduler_config.yml
 
-build-img:
+build-calendar-img:
 	docker build \
 		--build-arg=LDFLAGS="$(LDFLAGS)" \
-		-t $(DOCKER_IMG) \
-		-f build/Dockerfile .
+		-t $(DOCKER_CALENDAR_IMG) \
+		-f build/CalendarDockerfile .
+
+build-scheduler-img:
+	docker build \
+		--build-arg=LDFLAGS="$(LDFLAGS)" \
+		-t $(DOCKER_SCHEDULER_IMG) \
+		-f build/SchedulerDockerfile .
+
+build-sender-img:
+	docker build \
+		--build-arg=LDFLAGS="$(LDFLAGS)" \
+		-t $(DOCKER_SENDER_IMG) \
+		-f build/SenderDockerfile .
+
+build-int-img:
+	docker build -t $(DOCKER_INT_IMG) -f build/IntegrationDockerfile .
+
+build-img: build-calendar-img build-scheduler-img build-sender-img
+
+up: build-img
+	docker-compose -f docker-compose.yml up -d
+
+down: up
+	docker-compose -f docker-compose.yml down
+
+integration-tests: up build-int-img
+	docker-compose -f docker-compose-integrations.yml up && \
+	docker-compose -f docker-compose.yml down --remove-orphans
 
 run-img: build-img
 	docker run $(DOCKER_IMG)

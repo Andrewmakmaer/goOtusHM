@@ -1,0 +1,76 @@
+version: "3.5"
+services:
+  postgres:
+    image: "postgres:latest"
+    container_name: postgres
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=1234
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+  brocker:
+    container_name: brocker
+    image: "rabbitmq:3-management"
+    ports:
+      - 5672:5672
+      - 15672:15672
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+  calendar:
+    container_name: calendar
+    image: "calendar:develop"
+    ports:
+      - 8888:8888
+      - 8889:8889
+    environment:
+      - CALENDAR_LOG_LEVEL=INFO
+      - CALENDAR_LOG_TYPE=json
+      - CALENDAR_DB_TYPE=db
+      - CALENDAR_DB_ENDPOINT=postgres:5432
+      - CALENDAR_DB_DATABASE=postgres
+      - CALENDAR_DB_USER=postgres
+      - CALENDAR_DB_PASS=1234
+      - CALENDAR_HTTP_HOST=0.0.0.0
+      - CALENDAR_HTTP_PORT=8888
+      - CALENDAR_GRPC_PORT=8889
+    depends_on:
+      postgres:
+        condition: service_healthy
+  scheduler:
+    container_name: scheduler
+    image: "scheduler:develop"
+    environment:
+      - SCHEDULER_LOG_LEVEL=INFO
+      - SCHEDULER_LOG_TYPE=json
+      - SCHEDULER_DB_TYPE=db
+      - SCHEDULER_DB_ENDPOINT=postgres:5432
+      - SCHEDULER_DB_DATABASE=postgres
+      - SCHEDULER_DB_USER=postgres
+      - SCHEDULER_DB_PASS=1234
+      - SCHEDULER_BROCKER_HOST=amqp://guest:guest@brocker:5672/
+      - SCHEDULER_BROCKER_QUEUE=notification
+    depends_on:
+      postgres:
+        condition: service_healthy
+      brocker:
+        condition: service_healthy
+  sender:
+    container_name: sender
+    image: "sender:develop"
+    environment:
+      - SENDER_LOG_LEVEL=INFO
+      - SENDER_LOG_TYPE=json
+      - SENDER_BROCKER_HOST=amqp://guest:guest@brocker:5672/
+      - SENDER_BROCKER_QUEUE=notification
+      - SENDER_INT_QUEUE=sender-log 
+    depends_on:
+      brocker:
+        condition: service_healthy
