@@ -10,7 +10,7 @@ import (
 var senderConfigFile string
 
 func init() {
-	flag.StringVar(&senderConfigFile, "config", "/etc/calendar/sender_config.yml", "Path to configuration file")
+	flag.StringVar(&senderConfigFile, "config", "", "Path to configuration file")
 }
 
 func main() {
@@ -31,11 +31,17 @@ func main() {
 		logg.Error("message", err.Error())
 	}
 
+	forIntBroker, err := brokermanage.NewBroker(config.Brocker.Endpoint, config.Brocker.IntQueue)
+	if err != nil {
+		logg.Error("message", err.Error())
+	}
+
 	var ending chan struct{}
 
 	go func() {
 		for message := range messages {
-			logg.Info("message", "reading event", "event", message.Body)
+			logg.Info("message", "reading event", "event", string(message.Body))
+			forIntBroker.SendIntMessage(string(message.Body))
 		}
 	}()
 

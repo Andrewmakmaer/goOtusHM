@@ -1,0 +1,9 @@
+version: "3.5"
+services:
+  integrations:
+    image: "integration:develop"
+    environment:
+      - INTEGRATION_CALENDAR_URL=http://localhost:8888
+      - INTEGRATION_RABBIT_URL=amqp://guest:guest@localhost:5672/
+      - INTEGRATION_RABBIT_QUEUE=sender-log
+    network_mode: "host"
