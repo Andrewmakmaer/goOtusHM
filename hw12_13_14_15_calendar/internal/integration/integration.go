@@ -2,6 +2,7 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -166,7 +167,7 @@ func createEvent(userID, eventID string, event Event) (string, error) {
 
 func deleteEvent(userID, eventID string) error {
 	url := fmt.Sprintf("%s/events/%s/%s", calendarServiceURL, userID, eventID)
-	req, _ := http.NewRequest(http.MethodDelete, url, nil) //nolint:noctx
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodDelete, url, nil)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err

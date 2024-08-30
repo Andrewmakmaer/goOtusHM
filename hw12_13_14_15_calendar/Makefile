@@ -66,7 +66,7 @@ down: up
 
 integration-tests: up build-int-img
 	docker-compose -f docker-compose-integrations.yml up && \
-	docker-compose -f docker-compose.yml --remove-orphans down
+	docker-compose -f docker-compose.yml down --remove-orphans
 
 run-img: build-img
 	docker run $(DOCKER_IMG)
