@@ -1,0 +1,13 @@
+replicaCount: 1
+
+image:
+  repository: sender
+  tag: develop
+  pullPolicy: IfNotPresent
+
+config:
+  SENDER_LOG_LEVEL: INFO
+  SENDER_LOG_TYPE: json
+  SENDER_BROCKER_HOST: amqp://guest:guest@brocker:5672/
+  SENDER_BROCKER_QUEUE: notification
+  SENDER_INT_QUEUE: sender-log 

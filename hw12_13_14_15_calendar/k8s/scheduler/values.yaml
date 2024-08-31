@@ -1,0 +1,17 @@
+replicaCount: 1
+
+image:
+  repository: scheduler
+  tag: develop
+  pullPolicy: IfNotPresent
+
+config:
+  SCHEDULER_LOG_LEVEL: INFO
+  SCHEDULER_LOG_TYPE: json
+  SCHEDULER_DB_TYPE: db
+  SCHEDULER_DB_ENDPOINT: host.minikube.internal:5432
+  SCHEDULER_DB_DATABASE: postgres
+  SCHEDULER_DB_USER: postgres
+  SCHEDULER_DB_PASS: 1234
+  SCHEDULER_BROCKER_HOST: amqp://guest:guest@host.minikube.internal:5672/
+  SCHEDULER_BROCKER_QUEUE: notification
