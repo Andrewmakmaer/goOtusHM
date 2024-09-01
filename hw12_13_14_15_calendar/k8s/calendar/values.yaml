@@ -1,0 +1,55 @@
+replicaCount: 1
+
+image:
+  repository: calendar
+  tag: develop
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  httpPort: 8888
+  grpcPort: 8889
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+  hosts:
+    - host: calendar.k8s
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              name: calendar-service
+              port: 8888
+    - host: grpc.calendar.k8s
+      grpc:
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              name: calendar-service
+              port: 8889
+
+config:
+  CALENDAR_LOG_LEVEL: INFO
+  CALENDAR_LOG_TYPE: json
+  CALENDAR_DB_TYPE: db
+  CALENDAR_DB_ENDPOINT: "host.minikube.internal:5432"
+  CALENDAR_DB_DATABASE: postgres
+  CALENDAR_DB_USER: postgres
+  CALENDAR_DB_PASS: "1234"
+  CALENDAR_HTTP_HOST: "0.0.0.0"
+  CALENDAR_HTTP_PORT: "8888"
+  CALENDAR_GRPC_PORT: "8889"
+
+livenessProbe:
+  httpGet:
+    path: /hello
+    port: "8888"
+readinessProbe:
+  httpGet:
+    path: /hello
+    port: "8888"
